@@ -1,0 +1,244 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { TaskService } from '../services/task.service';
+import { UserService } from '../core/services/user.service';
+import { RPGHelper } from '../helpers/rpg-helper';
+import { UserStateService } from '../core/services/user-state.service';
+
+
+interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  categoryId: string;
+  xpValue: number;
+  isCompleted: boolean;
+  recurrencePattern?: string;
+  dueDate?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+interface UserStats {
+  characterXP: number;
+  characterLevel: number;
+  userLP: number;
+  lpLevel: number;
+}
+
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  templateUrl: './dashboard.html',
+  styleUrls: ['./dashboard.css'],
+})
+export class Dashboard implements OnInit {
+  tasks: Task[] = [];
+
+
+  userId = localStorage.getItem('userId') ?? '';
+
+
+  // RPG stats
+  userLP = 50;
+  lpLevel = 1;
+  characterXP = 0;
+  characterLevel = 1;
+ activeCharacter: { emoji: string; name?: string } = { emoji: '🧙' };
+
+  constructor(
+    private taskService: TaskService,
+    private router: Router,
+    private userState: UserStateService
+  ) {}
+
+  ngOnInit(): void {
+    if (!this.userId) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.userState.load(this.userId);
+
+    this.userState.getState().subscribe(state => {
+      if (!state) return;
+
+      this.userLP = state.userLP;
+      this.lpLevel = state.lpLevel;
+
+      this.characterXP = state.characterXP;
+      this.characterLevel = state.characterLevel;
+
+      this.activeCharacter = state.activeCharacter ?? { emoji: '🧙' };
+    });
+
+    this.loadTasks();
+  }
+
+
+
+
+  get activeTasks(): Task[] {
+    return this.tasks.filter(task => !this.isTaskCompletedToday(task));
+  }
+
+  get completedTasks(): Task[] {
+    return this.tasks.filter(task => this.isTaskCompletedToday(task));
+  }
+
+
+  loadTasks(): void {
+    this.taskService.getTasks().subscribe({
+      next: (data) => this.tasks = data.filter(task => this.shouldTaskAppearToday(task)),
+      error: (err) => console.error('Error loading tasks', err)
+    });
+  }
+
+
+
+  completeTask(task: Task): void {
+    const taskId = task.id;
+    const userId = this.userId;
+
+    this.taskService.completeTask(taskId).subscribe({
+      next: () => {
+
+        // 1. Reload tasks (UI list)
+        this.loadTasks();
+
+        // 2. reload RPG state from backend
+        this.userState.load(userId);
+
+      },
+      error: (err) => {
+        console.error('Could not update task FULL ERROR:', err);
+        console.error('Backend message:', err.error);
+      }
+    });
+  }
+
+  // Progress bar helpers
+  calculateCharacterXPPercent(): number {
+    return RPGHelper.getXPPercent(this.characterXP, this.characterLevel);
+  }
+
+  calculateLPPercent(): number {
+    return RPGHelper.getLPPercent(this.userLP, this.lpLevel);
+  }
+
+  maxXPForLevel(level: number): number {
+    return RPGHelper.getRequiredPointsForNextLevel(level);
+  }
+
+  maxLPForLevel(level: number): number {
+    return RPGHelper.getRequiredPointsForNextLevel(level);
+  }
+
+  //side drawer  section
+  isDrawerOpen = false;
+
+toggleDrawer(): void {
+  this.isDrawerOpen = !this.isDrawerOpen;
+}
+
+closeDrawer(): void {
+  this.isDrawerOpen = false;
+}
+
+logout(): void {
+  localStorage.removeItem('userId');
+  localStorage.removeItem('username');
+  localStorage.removeItem('email');
+  this.router.navigate(['/login']);
+}
+  //side drawer  section end
+
+// ======================================
+// Change page functions here 
+// ======================================
+
+  goToCreateTask(): void {
+  this.router.navigate(['/task-editor']);
+}
+
+goToDashboard(): void {
+  this.router.navigate(['/dashboard']);
+}
+
+
+goToTodayTasks(): void {
+  this.router.navigate(['/today-tasks']);
+}
+
+// Ending here
+
+openTaskEditor(task: Task): void {
+  this.router.navigate(['/task-editor', task.id]);
+}
+
+// ======================================
+// TASK VISIBILITY LOGIC (TODAY FILTER)
+// ======================================
+shouldTaskAppearToday(task: Task): boolean {
+
+  const today = new Date();
+
+  const created = new Date(task.dueDate ?? task.createdAt);
+
+  // strip time (IMPORTANT: ignore hours)
+  const sameDate =
+    created.getFullYear() === today.getFullYear() &&
+    created.getMonth() === today.getMonth() &&
+    created.getDate() === today.getDate();
+
+  // NON-RECURRING TASKS
+  if (!task.recurrencePattern) {
+    return sameDate;
+  }
+
+  // DAILY TASKS
+  if (task.recurrencePattern === 'daily') {
+    return true;
+  }
+
+  return false;
+}
+
+private isSameDate(date1: Date, date2: Date): boolean {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+
+
+isTaskCompletedToday(task: Task): boolean {
+
+  if (!task.recurrencePattern || task.recurrencePattern === '') {
+    return task.isCompleted;
+  }
+
+  if (task.recurrencePattern === 'daily') {
+    if (!task.completedAt) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const completed = new Date(task.completedAt);
+    completed.setHours(0, 0, 0, 0);
+
+    return this.isSameDate(today, completed);
+  }
+
+  return false;
+}
+
+
+}

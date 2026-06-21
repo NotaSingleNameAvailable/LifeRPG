@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-gray-900 text-white p-8">
+
+  <!-- Header -->
+  <div class="flex items-center gap-4 mb-8">
+    <button
+      routerLink="/dashboard"
+      class="text-2xl hover:text-gray-300 transition"
+    >
+      ←
+    </button>
+
+    <h1 class="text-3xl font-bold">
+      Characters
+    </h1>
+  </div>
+
+  <!-- Character Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <div
+      *ngFor="let character of characters"
+      (click)="character.isUnlocked && selectCharacter(character.id)"
+      class="bg-gray-800 rounded-2xl p-6 transition"
+      [class.hover:bg-gray-700]="character.isUnlocked"
+      [class.cursor-pointer]="character.isUnlocked"
+      [class.opacity-50]="!character.isUnlocked"
+      [class.ring-2]="character.isActive"
+      [class.ring-green-500]="character.isActive"
+    >
+
+      <!-- Emoji -->
+      <div class="text-6xl mb-4 text-center">
+        {{ character.characterEmoji }}
+      </div>
+
+      <!-- Name -->
+      <h2 class="text-xl font-bold text-center mb-2">
+        {{ character.characterName }}
+      </h2>
+
+      <!-- Unlock State -->
+      <div
+        class="text-center font-semibold mb-4"
+        [class.text-green-400]="character.isUnlocked"
+        [class.text-red-400]="!character.isUnlocked"
+      >
+        {{ character.isUnlocked ? 'Unlocked' : 'Locked' }}
+      </div>
+
+      <div
+        *ngIf="character.isActive"
+        class="text-center text-green-400 font-bold mb-2"
+      >
+        ACTIVE
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden mb-2">
+
+        <div
+          class="bg-blue-500 h-4 transition-all duration-300"
+          [style.width.%]="getXPPercent(character.currentXP, character.level)"
+        ></div>
+
+      </div>
+
+      <!-- XP Text -->
+      <div class="text-center text-sm text-gray-300 mb-2">
+        {{ character.currentXP }} /
+        {{ getRequiredXP(character.level) }} XP
+      </div>
+
+      <!-- Level -->
+      <div class="text-center text-sm text-gray-300">
+        Level {{ character.level }}
+      </div>
+
+    </div>
+
+  </div>
+</div>

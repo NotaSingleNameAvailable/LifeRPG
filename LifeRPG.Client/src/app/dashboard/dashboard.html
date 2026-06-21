@@ -1,0 +1,190 @@
+<!-- Menu button -->
+<button
+  type="button"
+  (click)="toggleDrawer()"
+  class="fixed top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg"
+>
+  ☰
+</button>
+
+<!-- Backdrop -->
+<div
+  *ngIf="isDrawerOpen"
+  class="fixed inset-0 bg-black/50 z-40"
+  (click)="closeDrawer()"
+></div>
+
+<!-- Side drawer -->
+<div
+  class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform transition-transform duration-300"
+  [class.translate-x-0]="isDrawerOpen"
+  [class.-translate-x-full]="!isDrawerOpen"
+>
+  <div class="flex flex-col h-full p-6 pb-24">
+    <div class="text-2xl font-bold mb-8">LifeRPG</div>
+
+    <!-- Characters button -->
+    <div class="flex-1 flex flex-col gap-3">
+      <button
+            routerLink="/characters"
+            class="text-left px-3 py-2 rounded hover:bg-gray-800"
+          >
+            🧙 Characters
+      </button>
+    </div>
+
+    <button
+      type="button"
+      (click)="logout()"
+      class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg"
+    >
+      Logout
+    </button>
+  </div>
+</div>
+<!--End of Side drawer -->
+
+
+
+<!-- Start of dashboard -->
+<div class="min-h-screen bg-gray-900 text-white p-8">
+  <h1 class="text-3xl font-bold mb-6 text-center">Dashboard</h1>
+
+  <!-- 🧙 Progress Bar Section -->
+<div class="bg-gray-800 p-4 rounded-xl mb-6 flex items-center justify-center gap-6">
+  <div class="flex flex-col items-center gap-1">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">{{ activeCharacter.emoji }}</span>
+<div class="relative w-64 bg-gray-700 rounded-full h-6 overflow-hidden">
+  <div
+    class="bg-blue-500 h-6 transition-all duration-300"
+    [style.width.%]="calculateCharacterXPPercent()"
+  ></div>
+
+  <div class="absolute inset-0 flex items-center justify-center text-white font-bold pointer-events-none">
+    {{ characterXP }} / {{ maxXPForLevel(characterLevel) }} XP
+  </div>
+</div>
+    </div>
+    <div class="text-sm">Level {{ characterLevel }}</div>
+  </div>
+
+  <div class="flex flex-col items-center gap-1">
+    <span class="font-semibold">LP:</span>
+<div class="relative w-64 bg-gray-700 rounded-full h-6 overflow-hidden">
+  <div
+    class="bg-green-500 h-6 transition-all duration-300"
+    [style.width.%]="calculateLPPercent()"
+  ></div>
+
+  <div class="absolute inset-0 flex items-center justify-center text-white font-bold pointer-events-none">
+    {{ userLP }} / {{ maxLPForLevel(lpLevel) }}
+  </div>
+</div>
+    <div class="text-sm">Level {{ lpLevel }}</div>
+  </div>
+</div>
+
+
+  <!-- Your Tasks Section -->
+  <div class="bg-gray-800 p-4 rounded-xl mb-6">
+    <h2 class="text-xl font-semibold mb-4">Your Tasks</h2>
+
+    <div *ngIf="activeTasks.length === 0" class="text-gray-400">
+      No active tasks yet.
+    </div>
+
+    <ul>
+        <li
+          *ngFor="let task of activeTasks"
+          (click)="openTaskEditor(task)"
+          class="bg-gray-700 p-3 rounded mb-2 flex items-start justify-between gap-4 cursor-pointer hover:bg-gray-600 transition"
+        >
+        <div class="min-w-0">
+          <div class="font-semibold">{{ task.title }}</div>
+          <div class="text-sm text-gray-300" *ngIf="task.description">
+            {{ task.description }}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="$event.stopPropagation(); completeTask(task)"
+          class="shrink-0 w-9 h-9 rounded-full bg-green-600 hover:bg-green-500 font-bold text-white flex items-center justify-center"
+          title="Mark as completed"
+        >
+          ✓
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Completed Tasks Section -->
+  <div class="bg-gray-800 p-4 rounded-xl">
+    <h2 class="text-xl font-semibold mb-4">Completed Tasks</h2>
+
+    <div *ngIf="completedTasks.length === 0" class="text-gray-400">
+      No completed tasks yet.
+    </div>
+
+    <ul>
+        <li
+          *ngFor="let task of completedTasks"
+          (click)="openTaskEditor(task)"
+          class="bg-gray-700/60 p-3 rounded mb-2 flex items-start justify-between gap-4 cursor-pointer hover:bg-gray-600/80 transition"
+        >
+        <div class="min-w-0">
+          <div class="font-semibold line-through text-gray-400">
+            {{ task.title }}
+          </div>
+          <div class="text-sm line-through text-gray-500" *ngIf="task.description">
+            {{ task.description }}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="$event.stopPropagation(); completeTask(task)"
+          class="shrink-0 w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-gray-300"
+          title="Mark as active"
+        >
+          X
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- Pages button (dashboard/create task/today's tasks) -->
+<div
+  class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50"
+>
+  <div class="max-w-4xl mx-auto flex gap-3">
+
+    <button
+      type="button"
+      (click)="goToDashboard()"
+      class="flex-1 bg-green-600 py-3 rounded-lg font-bold"
+    >
+      Dashboard
+    </button>
+
+    <button
+      type="button"
+      (click)="goToCreateTask()"
+      class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold"
+    >
+      Create Task
+    </button>
+
+    <button
+      type="button"
+      (click)="goToTodayTasks()"
+      class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-bold"
+    >
+      Today's Tasks
+    </button>
+
+  </div>
+</div>

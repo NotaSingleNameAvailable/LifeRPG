@@ -1,0 +1,135 @@
+<div class="min-h-screen bg-gray-900 text-white p-8 pb-32">
+
+  <h1 class="text-3xl font-bold mb-6 text-center">
+    Today's Tasks
+  </h1>
+
+  <!-- 🧙 Progress Bar Section -->
+<div class="bg-gray-800 p-4 rounded-xl mb-6 flex items-center justify-center gap-6">
+  <div class="flex flex-col items-center gap-1">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">{{ activeCharacter.emoji }}</span>
+<div class="relative w-64 bg-gray-700 rounded-full h-6 overflow-hidden">
+  <div
+    class="bg-blue-500 h-6 transition-all duration-300"
+    [style.width.%]="calculateCharacterXPPercent()"
+  ></div>
+
+  <div class="absolute inset-0 flex items-center justify-center text-white font-bold pointer-events-none">
+    {{ characterXP }} / {{ maxXPForLevel(characterLevel) }} XP
+  </div>
+</div>
+    </div>
+    <div class="text-sm">Level {{ characterLevel }}</div>
+  </div>
+
+  <div class="flex flex-col items-center gap-1">
+    <span class="font-semibold">LP:</span>
+<div class="relative w-64 bg-gray-700 rounded-full h-6 overflow-hidden">
+  <div
+    class="bg-green-500 h-6 transition-all duration-300"
+    [style.width.%]="calculateLPPercent()"
+  ></div>
+
+  <div class="absolute inset-0 flex items-center justify-center text-white font-bold pointer-events-none">
+    {{ userLP }} / {{ maxLPForLevel(lpLevel) }}
+  </div>
+</div>
+    <div class="text-sm">Level {{ lpLevel }}</div>
+  </div>
+</div>
+
+  <!-- Daily Tasks -->
+  <div class="bg-gray-800 p-4 rounded-xl">
+
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold">
+        Daily Checklist
+      </h2>
+
+      <div class="text-sm text-gray-400">
+        {{ completedCount }} / {{ dailyTasks.length }}
+        completed
+      </div>
+    </div>
+
+    <ul class="space-y-3">
+
+      <li
+        *ngFor="let task of dailyTasks"
+        (click)="toggleTask(task)"
+        class="cursor-pointer select-none bg-gray-700 rounded-lg p-4 transition hover:bg-gray-600"
+      >
+
+        <div class="flex items-center gap-4">
+
+          <!-- Checkbox -->
+          <div
+            class="w-7 h-7 rounded border-2 flex items-center justify-center text-lg font-bold"
+            [class.bg-green-600]="task.completed"
+            [class.border-green-600]="task.completed"
+            [class.border-gray-400]="!task.completed"
+          >
+            <span *ngIf="task.completed">✓</span>
+          </div>
+
+          <!-- Task Text -->
+          <div
+            class="flex-1 transition"
+            [class.line-through]="task.completed"
+            [class.opacity-50]="task.completed"
+            [class.blur-[1px]]="task.completed"
+          >
+            {{ task.title }}
+          </div>
+
+        </div>
+
+      </li>
+
+    </ul>
+
+    <!-- All completed message -->
+    <div
+      *ngIf="allTasksCompleted"
+      class="mt-6 text-center text-green-400 font-bold text-lg"
+    >
+      🎉 Daily Checklist Completed!
+    </div>
+
+  </div>
+
+</div>
+
+<!-- 🔥 Bottom Navigation Bar -->
+<div
+  class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50"
+>
+  <div class="max-w-4xl mx-auto flex gap-3">
+
+    <button
+      type="button"
+      (click)="goToDashboard()"
+      class="flex-1 bg-gray-700 hover:bg-gray-600 py-3 rounded-lg font-bold"
+    >
+      Dashboard
+    </button>
+
+    <button
+      type="button"
+      (click)="goToCreateTask()"
+      class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold"
+    >
+      Create Task
+    </button>
+
+    <button
+      type="button"
+      (click)="goToTodayTasks()"
+      class="flex-1 bg-green-600 py-3 rounded-lg font-bold"
+    >
+      Today's Tasks
+    </button>
+
+  </div>
+</div>

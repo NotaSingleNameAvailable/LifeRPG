@@ -1,0 +1,350 @@
+using LifeRPG.API.DTOs;
+using LifeRPG.Core.Models;
+using LifeRPG.Infrastructure.Data;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using LifeRPG.Core.Helpers;
+
+namespace LifeRPG.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class UserController : ControllerBase
+{
+    private readonly AppDbContext _context;
+
+    public UserController(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    [HttpPost("register")]
+    public async Task<ActionResult<UserResponseDto>> Register([FromBody] RegisterRequestDto request)
+    {
+        // Validate
+        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            return BadRequest("Email already exists");
+
+        if (await _context.Users.AnyAsync(u => u.Username == request.Username))
+            return BadRequest("Username already exists");
+
+        // Create user
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = request.Username,
+            Email = request.Email,
+            PasswordHash = request.Password, // ⚠️ In production, hash this! (if i dont keep it as a portfolio thing only)
+            TotalLifePoints = 0,
+            CurrentLifePoints = 0,
+            LifeLevel = 1,
+            StreakCount = 0,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+  
+        // Auto-unlock magician character (Cid = 1) AND set as active
+        var magician = await _context.Characters.FirstOrDefaultAsync(c => c.Cid == 1);
+
+        if (magician != null)
+        {
+            // 1. Set active character on user
+            user.ActiveCharacterId = magician.Id;
+
+            // 2. Create character progress
+            var progress = new UserCharacterProgress
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                CharacterId = magician.Id,
+                TotalXP = 0,
+                CurrentXP = 0,
+                Level = 1,
+                IsUnlocked = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.UserCharacterProgress.Add(progress);
+
+            // 3. Save BOTH user + progress together
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new UserResponseDto
+        {
+            Id = user.Id.ToString(),
+            Username = user.Username,
+            Email = user.Email,
+            TotalLifePoints = user.TotalLifePoints,
+            CurrentLifePoints = user.CurrentLifePoints,
+            LifeLevel = user.LifeLevel,
+            StreakCount = user.StreakCount,
+            CreatedAt = user.CreatedAt,
+            ActiveCharacterId = user.ActiveCharacterId?.ToString(),
+            CharacterXP = 0,
+            CharacterLevel = 1
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<UserResponseDto>> Login([FromBody] LoginRequestDto request)
+    {
+        var user = await _context.Users
+            .Include(u => u.CharacterProgress)
+                .ThenInclude(cp => cp.Character)
+            .FirstOrDefaultAsync(u => u.Username == request.Username);
+
+        if (user == null || user.PasswordHash != request.Password)
+            return Unauthorized("Invalid credentials");
+
+        var charProgress = user.CharacterProgress
+            .FirstOrDefault(cp => cp.CharacterId == user.ActiveCharacterId);
+
+        return Ok(new UserResponseDto
+        {
+            Id = user.Id.ToString(),
+            Username = user.Username,
+            Email = user.Email,
+            TotalLifePoints = user.TotalLifePoints,
+            CurrentLifePoints = user.CurrentLifePoints,
+            LifeLevel = user.LifeLevel,
+            StreakCount = user.StreakCount,
+            CreatedAt = user.CreatedAt,
+            CharacterXP = charProgress?.CurrentXP ?? 0,
+            CharacterLevel = charProgress?.Level ?? 1
+        });
+    }
+
+    [HttpGet("{userId}/stats")]
+    public async Task<ActionResult<UserStatsDto>> GetUserStats(string userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.CharacterProgress)
+                .ThenInclude(cp => cp.Character)
+            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+        if (user == null)
+            return NotFound();
+
+        var charProgress = user.CharacterProgress
+            .FirstOrDefault(cp => cp.CharacterId == user.ActiveCharacterId);
+
+        return Ok(new UserStatsDto
+        {
+            CharacterXP = charProgress?.CurrentXP ?? 0,
+            CharacterLevel = charProgress?.Level ?? 1,
+            UserLP = user.CurrentLifePoints,
+            LpLevel = user.LifeLevel
+        });
+    }
+
+    [HttpPut("{userId}/stats")]
+    public async Task<IActionResult> UpdateUserStats(string userId, [FromBody] UserStatsDto stats)
+    {
+        var user = await _context.Users.FindAsync(Guid.Parse(userId));
+        if (user == null)
+            return NotFound();
+
+        user.CurrentLifePoints = stats.UserLP;
+        user.LifeLevel = stats.LpLevel;
+
+        var charProgress = await _context.UserCharacterProgress
+        .FirstOrDefaultAsync(cp =>
+            cp.UserId == user.Id &&
+            cp.CharacterId == user.ActiveCharacterId);
+
+        if (charProgress != null)
+        {
+            charProgress.CurrentXP = stats.CharacterXP;
+            charProgress.Level = stats.CharacterLevel;
+            charProgress.LastUpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+
+    [HttpGet("{userId}/characters")]
+    public async Task<ActionResult<IEnumerable<CharacterProgressDto>>> GetUserCharacters(string userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.CharacterProgress)
+                .ThenInclude(cp => cp.Character)
+            .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+        if (user == null)
+            return NotFound();
+
+        var result = user.CharacterProgress.Select(cp => new CharacterProgressDto
+        {
+            Id = cp.Id.ToString(),
+            CharacterId = cp.CharacterId.ToString(),
+            Cid = cp.Character.Cid,
+            CharacterName = cp.Character.Name,
+            CharacterEmoji = cp.Character.Emoji,
+            TotalXP = cp.TotalXP,
+            CurrentXP = cp.CurrentXP,
+            Level = cp.Level,
+            IsUnlocked = cp.IsUnlocked
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("{userId}/me")]
+public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
+{
+    var user = await _context.Users
+        .Include(u => u.CharacterProgress)
+            .ThenInclude(cp => cp.Character)
+        .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+    if (user == null)
+        return NotFound();
+
+    var active = user.CharacterProgress
+        .FirstOrDefault(cp => cp.CharacterId == user.ActiveCharacterId);
+
+    var characters = user.CharacterProgress.Select(cp => new CharacterProgressDto
+    {
+        Id = cp.Id.ToString(),
+        CharacterId = cp.CharacterId.ToString(),
+        Cid = cp.Character.Cid,
+        CharacterName = cp.Character.Name,
+        CharacterEmoji = cp.Character.Emoji,
+        TotalXP = cp.TotalXP,
+        CurrentXP = cp.CurrentXP,
+        Level = cp.Level,
+        IsUnlocked = cp.IsUnlocked
+    }).ToList();
+
+    return Ok(new UserMeDto
+    {
+        Id = user.Id.ToString(),
+        Username = user.Username,
+
+        TotalLifePoints = user.TotalLifePoints,
+        CurrentLifePoints = user.CurrentLifePoints,
+        LifeLevel = user.LifeLevel,
+
+        ActiveCharacterId = user.ActiveCharacterId?.ToString(),
+
+        CharacterXP = active?.CurrentXP ?? 0,
+        CharacterLevel = active?.Level ?? 1,
+
+        Characters = characters
+    });
+}
+
+[HttpPost("{userId}/apply-task-delta")]
+public async Task<IActionResult> ApplyTaskDelta(string userId, [FromBody] ApplyTaskDeltaDto dto)
+{
+    if (dto.CharacterId == Guid.Empty)
+        return BadRequest("CharacterId is required.");
+
+    var user = await _context.Users
+        .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+    if (user == null)
+        return NotFound("User not found.");
+
+    var characterProgress = await _context.UserCharacterProgress
+        .FirstOrDefaultAsync(cp =>
+            cp.UserId == user.Id &&
+            cp.CharacterId == dto.CharacterId);
+
+    if (characterProgress == null)
+    {
+        characterProgress = new UserCharacterProgress
+        {
+            UserId = user.Id,
+            CharacterId = dto.CharacterId,
+            TotalXP = 0,
+            CurrentXP = 0,
+            Level = 1,
+            IsUnlocked = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.UserCharacterProgress.Add(characterProgress);
+    }
+
+    // Apply character XP delta
+    if (dto.XpDelta > 0)
+    {
+        characterProgress.TotalXP += dto.XpDelta;
+
+        var xpResult = ProgressionHelper.AddPoints(
+            characterProgress.Level,
+            characterProgress.CurrentXP,
+            dto.XpDelta
+        );
+
+        characterProgress.Level = xpResult.newLevel;
+        characterProgress.CurrentXP = xpResult.newCurrentPoints;
+    }
+    else if (dto.XpDelta < 0)
+    {
+        var reduction = Math.Abs(dto.XpDelta);
+
+        characterProgress.TotalXP -= reduction;
+        if (characterProgress.TotalXP < 0)
+            characterProgress.TotalXP = 0;
+
+        var xpResult = ProgressionHelper.RemovePoints(
+            characterProgress.Level,
+            characterProgress.CurrentXP,
+            reduction
+        );
+
+        characterProgress.Level = xpResult.newLevel;
+        characterProgress.CurrentXP = xpResult.newCurrentPoints;
+    }
+
+    characterProgress.LastUpdatedAt = DateTime.UtcNow;
+
+    // Apply user LP delta
+    if (dto.LpDelta > 0)
+    {
+        user.TotalLifePoints += dto.LpDelta;
+
+        var lpResult = ProgressionHelper.AddPoints(
+            user.LifeLevel,
+            user.CurrentLifePoints,
+            dto.LpDelta
+        );
+
+        user.LifeLevel = lpResult.newLevel;
+        user.CurrentLifePoints = lpResult.newCurrentPoints;
+    }
+    else if (dto.LpDelta < 0)
+    {
+        var reduction = Math.Abs(dto.LpDelta);
+
+        user.TotalLifePoints -= reduction;
+        if (user.TotalLifePoints < 0)
+            user.TotalLifePoints = 0;
+
+        var lpResult = ProgressionHelper.RemovePoints(
+            user.LifeLevel,
+            user.CurrentLifePoints,
+            reduction
+        );
+
+        user.LifeLevel = lpResult.newLevel;
+        user.CurrentLifePoints = lpResult.newCurrentPoints;
+    }
+
+    await _context.SaveChangesAsync();
+    return Ok(new
+    {
+        user.CurrentLifePoints,
+        user.LifeLevel,
+        characterProgress.CurrentXP,
+        characterProgress.Level
+    });
+}
+}
