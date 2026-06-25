@@ -142,6 +142,13 @@
           </div>
         </div>
 
+        <span
+          *ngIf="task.isCompleted  && task.awardedCharacterId"
+          class="mr-2 text-lg"
+        >
+          {{ getCharacterEmoji(task.awardedCharacterId) }}
+        </span>
+
         <button
           type="button"
           (click)="$event.stopPropagation(); completeTask(task)"

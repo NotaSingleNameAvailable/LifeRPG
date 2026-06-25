@@ -175,6 +175,9 @@ export class TodayTasks implements OnInit {
     const userId = localStorage.getItem('userId') ?? '';
     if (!userId) return;
 
+    //  Read active character at the moment of the click, not from stale stored value
+    const activeCharacterId = this.userState.getSnapshot()?.activeCharacter?.id ?? null;  
+
     const previousCompleted = task.completed;
     const previousAwardedCharacterId = task.awardedCharacterId ?? null;
 
@@ -193,6 +196,11 @@ export class TodayTasks implements OnInit {
     }
 
     task.completed = isCompleting;
+
+      // Clear awardedCharacterId when uncompleting so it can be re-awarded
+      if (!isCompleting) {
+        task.awardedCharacterId = null;
+      }
 
     this.http.post(`http://localhost:5266/api/user/${userId}/apply-task-delta`, {
       characterId: targetCharacterId,
@@ -219,4 +227,17 @@ export class TodayTasks implements OnInit {
     const todayKey = this.getTodayKey();
     localStorage.setItem(`todayTasks_${todayKey}`, JSON.stringify(this.dailyTasks));
   }
+
+  // ======================================
+  // getCharacterEmoji to show emoji of character that completed task
+  // ======================================
+
+  getCharacterEmoji(characterId: string | null): string {
+  if (!characterId) return '';
+  const active = this.userState.getSnapshot()?.activeCharacter;
+  if (active && active.id?.toLowerCase() === characterId.toLowerCase()) {
+    return active.emoji;
+  }
+  return '🧙';
+}
 }

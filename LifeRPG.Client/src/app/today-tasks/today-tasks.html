@@ -83,6 +83,10 @@
             {{ task.title }}
           </div>
 
+         <!--  Character emoji who completed it -->
+           <span *ngIf="task.completed && task.awardedCharacterId" class="text-xl">
+             {{ getCharacterEmoji(task.awardedCharacterId) }}
+           </span>
         </div>
 
       </li>

@@ -21,6 +21,7 @@ interface Task {
   dueDate?: string | null;
   createdAt: string;
   completedAt?: string | null;
+  awardedCharacterId?: string | null;
 }
 
 interface UserStats {
@@ -49,7 +50,7 @@ export class Dashboard implements OnInit {
   lpLevel = 1;
   characterXP = 0;
   characterLevel = 1;
- activeCharacter: { emoji: string; name?: string } = { emoji: '🧙' };
+  activeCharacter: {id: string | null;emoji: string;name?: string;} = {id: null,emoji: '🧙'};
 
   constructor(
     private taskService: TaskService,
@@ -74,7 +75,7 @@ export class Dashboard implements OnInit {
       this.characterXP = state.characterXP;
       this.characterLevel = state.characterLevel;
 
-      this.activeCharacter = state.activeCharacter ?? { emoji: '🧙' };
+      this.activeCharacter = state.activeCharacter ? {id: state.activeCharacter.id,emoji: state.activeCharacter.emoji, name: state.activeCharacter.name } : { id: null, emoji: '🧙' };
     });
 
     this.loadTasks();
@@ -94,7 +95,7 @@ export class Dashboard implements OnInit {
 
   loadTasks(): void {
     this.taskService.getTasks().subscribe({
-      next: (data) => this.tasks = data.filter(task => this.shouldTaskAppearToday(task)),
+      next: (data) => this.tasks = data.filter(task => this.shouldTaskAppearToday(task)).map(task => ({...task,awardedCharacterId: task.awardedCharacterId ?? null})),
       error: (err) => console.error('Error loading tasks', err)
     });
   }
@@ -107,13 +108,10 @@ export class Dashboard implements OnInit {
 
     this.taskService.completeTask(taskId).subscribe({
       next: () => {
-
         // 1. Reload tasks (UI list)
         this.loadTasks();
-
         // 2. reload RPG state from backend
-        this.userState.load(userId);
-
+        this.userState.load(this.userId);
       },
       error: (err) => {
         console.error('Could not update task FULL ERROR:', err);
@@ -130,6 +128,18 @@ export class Dashboard implements OnInit {
   calculateLPPercent(): number {
     return RPGHelper.getLPPercent(this.userLP, this.lpLevel);
   }
+
+  getCharacterEmoji(characterId: string | null): string {
+  if (!characterId) return '';
+
+  const active = this.userState.getSnapshot()?.activeCharacter;
+
+  if (active && active.id.toLowerCase() === characterId.toLowerCase()) {
+    return active.emoji;
+  }
+
+  return '🧙';
+ }
 
   maxXPForLevel(level: number): number {
     return RPGHelper.getRequiredPointsForNextLevel(level);

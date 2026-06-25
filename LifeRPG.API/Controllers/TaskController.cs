@@ -40,7 +40,8 @@ namespace LifeRPG.API.Controllers
                     CompletedAt = t.CompletedAt,
                     DueDate = t.DueDate,
                     Username = t.User != null ? t.User.Username : null,
-                    CategoryName = t.Category != null ? t.Category.Name : null
+                    CategoryName = t.Category != null ? t.Category.Name : null,
+                    AwardedCharacterId = t.AwardedCharacterId
                 })
                 .ToListAsync();
 
@@ -105,7 +106,8 @@ namespace LifeRPG.API.Controllers
                     CompletedAt = t.CompletedAt,
                     DueDate = t.DueDate,
                     Username = t.User != null ? t.User.Username : null,
-                    CategoryName = t.Category != null ? t.Category.Name : null
+                    CategoryName = t.Category != null ? t.Category.Name : null,
+                    AwardedCharacterId = t.AwardedCharacterId
                 })
                 .FirstOrDefaultAsync();
 
