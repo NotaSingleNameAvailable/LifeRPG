@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { UserStateService } from '../core/services/user-state.service';
+import { RouterLink } from '@angular/router';
 
 
 interface DailyTask {
@@ -20,7 +21,7 @@ interface ActiveCharacterView {
 @Component({
   selector: 'app-today-tasks',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule , RouterLink],
   templateUrl: './today-tasks.html',
   styleUrls: ['./today-tasks.css']
 })
@@ -238,4 +239,23 @@ export class TodayTasks implements OnInit {
     const match = all.find(c => c.id.toLowerCase() === characterId.toLowerCase());
     return match?.emoji ?? '🧙';
   }
+
+  //side drawer  section
+  isDrawerOpen = false;
+
+  toggleDrawer(): void {
+    this.isDrawerOpen = !this.isDrawerOpen;
+  }
+
+  closeDrawer(): void {
+    this.isDrawerOpen = false;
+  }
+
+  logout(): void {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    this.router.navigate(['/login']);
+  }
+  //side drawer  section end
 }

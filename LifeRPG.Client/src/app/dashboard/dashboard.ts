@@ -147,79 +147,78 @@ export class Dashboard implements OnInit {
   //side drawer  section
   isDrawerOpen = false;
 
-toggleDrawer(): void {
-  this.isDrawerOpen = !this.isDrawerOpen;
-}
+  toggleDrawer(): void {
+    this.isDrawerOpen = !this.isDrawerOpen;
+  }
 
-closeDrawer(): void {
-  this.isDrawerOpen = false;
-}
+  closeDrawer(): void {
+    this.isDrawerOpen = false;
+  }
 
-logout(): void {
-  localStorage.removeItem('userId');
-  localStorage.removeItem('username');
-  localStorage.removeItem('email');
-  this.router.navigate(['/login']);
-}
+  logout(): void {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    this.router.navigate(['/login']);
+  }
   //side drawer  section end
 
-// ======================================
-// Change page functions here 
-// ======================================
+  // ======================================
+  // Change page functions here 
+  // ======================================
 
-  goToCreateTask(): void {
-  this.router.navigate(['/task-editor']);
-}
-
-goToDashboard(): void {
-  this.router.navigate(['/dashboard']);
-}
-
-
-goToTodayTasks(): void {
-  this.router.navigate(['/today-tasks']);
-}
-
-// Ending here
-
-openTaskEditor(task: Task): void {
-  this.router.navigate(['/task-editor', task.id]);
-}
-
-// ======================================
-// TASK VISIBILITY LOGIC (TODAY FILTER)
-// ======================================
-shouldTaskAppearToday(task: Task): boolean {
-
-  const today = new Date();
-
-  const created = new Date(task.dueDate ?? task.createdAt);
-
-  // strip time (IMPORTANT: ignore hours)
-  const sameDate =
-    created.getFullYear() === today.getFullYear() &&
-    created.getMonth() === today.getMonth() &&
-    created.getDate() === today.getDate();
-
-  // NON-RECURRING TASKS
-  if (!task.recurrencePattern) {
-    return sameDate;
+    goToCreateTask(): void {
+    this.router.navigate(['/task-editor']);
   }
 
-  // DAILY TASKS
-  if (task.recurrencePattern === 'daily') {
-    return true;
+  goToDashboard(): void {
+    this.router.navigate(['/dashboard']);
   }
 
-  return false;
-}
 
-private isSameDate(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
+  goToTodayTasks(): void {
+    this.router.navigate(['/today-tasks']);
+  }
+
+  // Ending here
+
+  openTaskEditor(task: Task): void {
+    this.router.navigate(['/task-editor', task.id]);
+  }
+
+  // ======================================
+  // TASK VISIBILITY LOGIC (TODAY FILTER)
+  // ======================================
+ shouldTaskAppearToday(task: Task): boolean {
+    const today = new Date();
+
+    const created = new Date(task.dueDate ?? task.createdAt);
+
+    // strip time (IMPORTANT: ignore hours)
+    const sameDate =
+      created.getFullYear() === today.getFullYear() &&
+      created.getMonth() === today.getMonth() &&
+      created.getDate() === today.getDate();
+
+    // NON-RECURRING TASKS
+    if (!task.recurrencePattern) {
+      return sameDate;
+    }
+
+    // DAILY TASKS
+    if (task.recurrencePattern === 'daily') {
+      return true;
+    }
+
+    return false;
+ }
+
+  private isSameDate(date1: Date, date2: Date): boolean {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
 }
 
 

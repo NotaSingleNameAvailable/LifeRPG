@@ -1,3 +1,51 @@
+<!-- Menu button -->
+<button
+  type="button"
+  (click)="toggleDrawer()"
+  class="fixed top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg"
+>
+  ☰
+</button>
+
+<!-- Backdrop -->
+<div
+  *ngIf="isDrawerOpen"
+  class="fixed inset-0 bg-black/50 z-40"
+  (click)="closeDrawer()"
+></div>
+
+<!-- Side drawer -->
+<div
+  class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform transition-transform duration-300"
+  [class.translate-x-0]="isDrawerOpen"
+  [class.-translate-x-full]="!isDrawerOpen"
+>
+  <div class="flex flex-col h-full p-6 pb-24">
+    <div class="text-2xl font-bold mb-8">LifeRPG</div>
+
+    <!-- Characters button -->
+    <div class="flex-1 flex flex-col gap-3">
+      <button
+            routerLink="/characters"
+            class="text-left px-3 py-2 rounded hover:bg-gray-800"
+          >
+            🧙 Characters
+      </button>
+    </div>
+
+    <button
+      type="button"
+      (click)="logout()"
+      class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg"
+    >
+      Logout
+    </button>
+  </div>
+</div>
+<!--End of Side drawer -->
+
+
+<!--Start of today's tasks page -->
 <div class="min-h-screen bg-gray-900 text-white p-8 pb-32">
 
   <h1 class="text-3xl font-bold mb-6 text-center">
