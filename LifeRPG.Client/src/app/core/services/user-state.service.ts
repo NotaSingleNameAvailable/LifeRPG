@@ -16,6 +16,7 @@ export interface UserState {
     emoji: string;
     name?: string;
   } | null;
+  allCharacters: { id: string; emoji: string; name: string; }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -47,7 +48,12 @@ export class UserStateService {
             id: active.characterId,
             emoji: active.characterEmoji,
             name: active.characterName
-          } : null
+          } : null,
+            allCharacters: data.characters.map((c: any) => ({
+              id: c.characterId,
+              emoji: c.characterEmoji,
+              name: c.characterName
+            }))
         };
 
         this.state$.next(state);

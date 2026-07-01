@@ -130,16 +130,11 @@ export class Dashboard implements OnInit {
   }
 
   getCharacterEmoji(characterId: string | null): string {
-  if (!characterId) return '';
-
-  const active = this.userState.getSnapshot()?.activeCharacter;
-
-  if (active && active.id.toLowerCase() === characterId.toLowerCase()) {
-    return active.emoji;
+    if (!characterId) return '';
+    const all = this.userState.getSnapshot()?.allCharacters ?? [];
+    const match = all.find(c => c.id.toLowerCase() === characterId.toLowerCase());
+    return match?.emoji ?? '🧙';
   }
-
-  return '🧙';
- }
 
   maxXPForLevel(level: number): number {
     return RPGHelper.getRequiredPointsForNextLevel(level);
