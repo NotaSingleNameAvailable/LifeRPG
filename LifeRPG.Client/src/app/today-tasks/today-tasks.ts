@@ -18,6 +18,13 @@ interface ActiveCharacterView {
   name?: string;
 }
 
+interface DailyTaskPopup {
+  id: number;
+  taskId: number;
+  text: string;
+  type: 'gain' | 'loss';
+}
+
 @Component({
   selector: 'app-today-tasks',
   standalone: true,
@@ -38,7 +45,7 @@ export class TodayTasks implements OnInit {
   activeCharacter: ActiveCharacterView = { emoji: '🧙' };
 
   private readonly TASK_XP = 10;
-  private readonly TASK_LP = 5;
+  private readonly TASK_LP = 10;
 
   private readonly TASK_POOL: string[] = [
     'Drink 2L of water',
@@ -176,17 +183,14 @@ export class TodayTasks implements OnInit {
     const userId = localStorage.getItem('userId') ?? '';
     if (!userId) return;
 
-    //  Read active character at the moment of the click, not from stale stored value
-    const activeCharacterId = this.userState.getSnapshot()?.activeCharacter?.id ?? null;  
+    const activeCharacterId = this.userState.getSnapshot()?.activeCharacter?.id ?? null;
+    const isCompleting = !task.completed;
 
     const previousCompleted = task.completed;
     const previousAwardedCharacterId = task.awardedCharacterId ?? null;
 
-    const isCompleting = !task.completed;
-
-    // If this task has never been awarded before, lock it to the current active character now.
     if (!task.awardedCharacterId) {
-      task.awardedCharacterId = this.activeCharacterId;
+      task.awardedCharacterId = activeCharacterId;
     }
 
     const targetCharacterId = task.awardedCharacterId;
@@ -196,12 +200,20 @@ export class TodayTasks implements OnInit {
       return;
     }
 
+    // For uncompleting: emoji of the character losing XP, not the active one
+    const relevantCharacterId = isCompleting ? activeCharacterId : task.awardedCharacterId;
+    const characterEmoji = relevantCharacterId
+      ? this.getCharacterEmoji(relevantCharacterId)
+      : null;
+
+    //  Show popup
+    this.showPopup(task.id, this.TASK_XP, isCompleting, characterEmoji);
+
     task.completed = isCompleting;
 
-      // Clear awardedCharacterId when uncompleting so it can be re-awarded
-      if (!isCompleting) {
-        task.awardedCharacterId = null;
-      }
+    if (!isCompleting) {
+      task.awardedCharacterId = null;
+    }
 
     this.http.post(`http://localhost:5266/api/user/${userId}/apply-task-delta`, {
       characterId: targetCharacterId,
@@ -258,4 +270,37 @@ export class TodayTasks implements OnInit {
     this.router.navigate(['/login']);
   }
   //side drawer  section end
+
+
+
+
+  // ======================================
+  // xpPopups start
+  // ======================================
+  xpPopups: DailyTaskPopup[] = [];
+  private popupCounter = 0;
+
+  showPopup(taskId: number, xpValue: number, isGaining: boolean, characterEmoji: string | null): void {
+    const sign = isGaining ? '+' : '-';
+    const emoji = characterEmoji ? `${characterEmoji} ` : '';
+    const text = `${emoji}${sign}${xpValue} XP    ${sign}${xpValue} LP`;
+
+    const popup: DailyTaskPopup = {
+      id: ++this.popupCounter,
+      taskId,
+      text,
+      type: isGaining ? 'gain' : 'loss'
+    };
+
+    this.xpPopups.push(popup);
+    setTimeout(() => {
+      this.xpPopups = this.xpPopups.filter(p => p.id !== popup.id);
+    }, 1400);
+  }
+  // ======================================
+  // xpPopups end
+  // ======================================
+
+
+
 }

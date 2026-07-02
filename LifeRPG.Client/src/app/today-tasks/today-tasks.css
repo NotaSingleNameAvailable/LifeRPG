@@ -1,0 +1,22 @@
+/* XP popup part */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+.xp-popup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-size: 1.1rem;
+  font-weight: bold;
+  white-space: nowrap;
+  z-index: 100;
+  animation: floatUp 1.4s ease-out forwards;
+}
+
+.xp-popup.gain { color: #4ade80; }
+.xp-popup.loss { color: #f87171; }
+

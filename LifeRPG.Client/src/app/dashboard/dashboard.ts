@@ -31,6 +31,13 @@ interface UserStats {
   lpLevel: number;
 }
 
+interface XpPopup {
+  id: number;
+  taskId: string;
+  text: string;
+  type: 'gain' | 'loss';
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -103,14 +110,23 @@ export class Dashboard implements OnInit {
 
 
   completeTask(task: Task): void {
-    const taskId = task.id;
-    const userId = this.userId;
+    const isGaining = !task.isCompleted; // true = completing, false = uncompleting
 
-    this.taskService.completeTask(taskId).subscribe({
+    // For uncompleting: the character losing XP is the one who earned it, not the active one
+    const relevantCharacterId = isGaining
+      ? this.activeCharacter?.id ?? null
+      : task.awardedCharacterId ?? null;
+
+    const characterEmoji = relevantCharacterId
+      ? this.getCharacterEmoji(relevantCharacterId)
+      : null;
+
+    // Show XP popup
+    this.showPopup(task.id, task.xpValue, isGaining, characterEmoji);
+
+    this.taskService.completeTask(task.id).subscribe({
       next: () => {
-        // 1. Reload tasks (UI list)
         this.loadTasks();
-        // 2. reload RPG state from backend
         this.userState.load(this.userId);
       },
       error: (err) => {
@@ -244,5 +260,31 @@ isTaskCompletedToday(task: Task): boolean {
   return false;
 }
 
+  // ======================================
+  // XP popup starts here
+  // ======================================
+  xpPopups: XpPopup[] = [];
+  private popupCounter = 0;
+
+  showPopup(taskId: string, xpValue: number, isGaining: boolean, characterEmoji: string | null): void {
+    const sign = isGaining ? '+' : '-';
+    const emoji = characterEmoji ? `${characterEmoji} ` : '';
+    const text = `${emoji}${sign}${xpValue} XP    ${sign}${xpValue} LP`;
+
+    const popup: XpPopup = {
+      id: ++this.popupCounter,
+      taskId,
+      text,
+      type: isGaining ? 'gain' : 'loss'
+    };
+
+    this.xpPopups.push(popup);
+    setTimeout(() => {
+      this.xpPopups = this.xpPopups.filter(p => p.id !== popup.id);
+    }, 1400);
+  }
+  // ======================================
+  // XP popup ends here
+  // ======================================
 
 }

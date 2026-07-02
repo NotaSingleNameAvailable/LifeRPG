@@ -18,7 +18,6 @@ export class TaskService {
     return this.http.post<any>(this.apiUrl, task);
   }
 
-    // ✅ Add this method
   completeTask(taskId: string | undefined): Observable<any> {
     if (!taskId) throw new Error('Task ID is required');
     return this.http.put<any>(`${this.apiUrl}/${taskId}/complete`, {});

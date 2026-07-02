@@ -109,6 +109,18 @@
         class="cursor-pointer select-none bg-gray-700 rounded-lg p-4 transition hover:bg-gray-600"
       >
 
+        <!-- Popups -->
+          <ng-container *ngFor="let popup of xpPopups">
+            <div
+              *ngIf="popup.taskId === task.id"
+              class="xp-popup"
+              [class.gain]="popup.type === 'gain'"
+              [class.loss]="popup.type === 'loss'"
+            >
+              {{ popup.text }}
+            </div>
+          </ng-container>
+
         <div class="flex items-center gap-4">
 
           <!-- Checkbox -->
