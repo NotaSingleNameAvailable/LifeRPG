@@ -1,0 +1,143 @@
+<!-- Menu button -->
+<button
+  type="button"
+  (click)="toggleDrawer()"
+  class="fixed top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg"
+>
+  ☰
+</button>
+
+<!-- Backdrop -->
+<div
+  *ngIf="isDrawerOpen"
+  class="fixed inset-0 bg-black/50 z-40"
+  (click)="closeDrawer()"
+></div>
+
+<!-- Side drawer -->
+<div
+  class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform transition-transform duration-300"
+  [class.translate-x-0]="isDrawerOpen"
+  [class.-translate-x-full]="!isDrawerOpen"
+>
+  <div class="flex flex-col h-full p-6 pb-24">
+    <div class="text-2xl font-bold mb-8">LifeRPG</div>
+    <div class="flex-1 flex flex-col gap-3">
+      <button routerLink="/characters" class="text-left px-3 py-2 rounded hover:bg-gray-800">
+        🧙 Characters
+      </button>
+      <button routerLink="/statistics" class="text-left px-3 py-2 rounded hover:bg-gray-800">
+        📊 Statistics
+      </button>
+    </div>
+    <button
+      type="button"
+      (click)="logout()"
+      class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg"
+    >
+      Logout
+    </button>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="min-h-screen bg-gray-900 text-white p-8">
+  <h1 class="text-3xl font-bold mb-6 text-center">📊 Statistics</h1>
+
+  <!-- Streak Card -->
+  <div class="bg-gray-800 rounded-2xl p-6 mb-6 flex flex-col items-center gap-2">
+    <div class="text-5xl">🔥</div>
+    <div class="text-5xl font-bold text-orange-400">{{ streakCount }}</div>
+    <div class="text-gray-400 text-sm uppercase tracking-widest">day streak</div>
+    <div class="text-gray-500 text-xs mt-1" *ngIf="streakCount === 0">
+      Complete a task today to start your streak!
+    </div>
+    <div class="text-gray-500 text-xs mt-1" *ngIf="streakCount === 1">
+      Great start — keep it going tomorrow!
+    </div>
+    <div class="text-gray-500 text-xs mt-1" *ngIf="streakCount > 1">
+      {{ streakCount }} days in a row 💪 Don't break the chain!
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="bg-gray-800 rounded-2xl p-6">
+
+    <!-- Header + Sort -->
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold">Character Leaderboard</h2>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="setSortMode('mostUsed')"
+          class="text-sm px-3 py-1 rounded-lg font-semibold transition"
+          [class.bg-blue-600]="sortMode === 'mostUsed'"
+          [class.bg-gray-700]="sortMode !== 'mostUsed'"
+        >
+          Most Used
+        </button>
+        <button
+          type="button"
+          (click)="setSortMode('alphabetical')"
+          class="text-sm px-3 py-1 rounded-lg font-semibold transition"
+          [class.bg-blue-600]="sortMode === 'alphabetical'"
+          [class.bg-gray-700]="sortMode !== 'alphabetical'"
+        >
+          A–Z
+        </button>
+      </div>
+    </div>
+
+    <!-- Character rows -->
+    <ul class="flex flex-col gap-3">
+      <li
+        *ngFor="let char of sortedCharacters; let i = index"
+        class="rounded-xl p-4 flex items-center gap-4 transition"
+        [class.bg-gray-700]="char.isUnlocked"
+        [class.bg-gray-700]="!char.isUnlocked"
+        [class.opacity-50]="!char.isUnlocked"
+      >
+        <!-- Rank (only for unlocked, sorted by mostUsed) -->
+        <div class="text-gray-400 font-bold w-6 text-center text-sm">
+          {{ char.isUnlocked ? (i + 1) : '—' }}
+        </div>
+
+        <!-- Emoji -->
+        <div class="text-3xl">{{ char.characterEmoji }}</div>
+
+        <!-- Name + bar -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-semibold">{{ char.characterName }}</span>
+            <span
+              *ngIf="!char.isUnlocked"
+              class="text-xs text-red-400 font-semibold"
+            >
+              LOCKED
+            </span>
+          </div>
+
+          <!-- Progress bar showing % of total tasks -->
+          <div class="w-full bg-gray-600 rounded-full h-2 overflow-hidden">
+            <div
+              class="bg-blue-500 h-2 transition-all duration-500"
+              [style.width.%]="char.isUnlocked ? char.percentage : 0"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="text-right shrink-0" *ngIf="char.isUnlocked">
+          <div class="font-bold text-white">{{ char.tasksCompleted }}</div>
+          <div class="text-xs text-gray-400">{{ char.percentage }}% of tasks</div>
+        </div>
+
+        <div class="text-right shrink-0 text-gray-500 text-sm" *ngIf="!char.isUnlocked">
+          Unlocks at LP {{ char.unlockLevel }}
+        </div>
+
+      </li>
+    </ul>
+
+  </div>
+</div>

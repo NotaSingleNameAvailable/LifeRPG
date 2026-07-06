@@ -7,21 +7,20 @@ namespace LifeRPG.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CharacterController : ControllerBase
+    public class StatisticsController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public CharacterController(AppDbContext context)
+        public StatisticsController(AppDbContext context)
         {
             _context = context;
         }
 
         [HttpGet("{userId}")]
-        public async Task<IActionResult> GetCharacters(Guid userId)
+        public async Task<IActionResult> GetStatistics(Guid userId)
         {
             var user = await _context.Users
                 .Include(u => u.CharacterProgress)
-                    .ThenInclude(cp => cp.Character)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -32,14 +31,15 @@ namespace LifeRPG.API.Controllers
                 .OrderBy(c => c.Cid)
                 .ToListAsync();
 
-             // Load completed task counts per character
-                var taskCounts = await _context.Tasks
-                     .Where(t => t.UserId == userId && t.IsCompleted && t.AwardedCharacterId != null)
-                      .GroupBy(t => t.AwardedCharacterId)
-                      .Select(g => new { CharacterId = g.Key, Count = g.Count() })
-                      .ToListAsync();
+            var taskCounts = await _context.Tasks
+                .Where(t => t.UserId == userId && t.IsCompleted && t.AwardedCharacterId != null)
+                .GroupBy(t => t.AwardedCharacterId)
+                .Select(g => new { CharacterId = g.Key, Count = g.Count() })
+                .ToListAsync();
 
-            var result = characters.Select(c =>
+            var totalTasks = taskCounts.Sum(t => t.Count);
+
+            var characterStats = characters.Select(c =>
             {
                 var progress = user.CharacterProgress.FirstOrDefault(cp => cp.CharacterId == c.Id);
                 var taskCount = taskCounts.FirstOrDefault(t => t.CharacterId == c.Id);
@@ -47,9 +47,7 @@ namespace LifeRPG.API.Controllers
                 return new CharacterProgressDto
                 {
                     Id = c.Id.ToString(),
-
                     CharacterId = c.Id.ToString(),
-
                     Cid = c.Cid,
                     CharacterName = c.Name,
                     CharacterEmoji = c.Emoji,
@@ -64,27 +62,11 @@ namespace LifeRPG.API.Controllers
                 };
             }).ToList();
 
-            return Ok(result);
-        }
-
-        [HttpPut("select/{userId}/{characterId}")]
-        public async Task<IActionResult> SelectCharacter(Guid userId, Guid characterId)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
-                return NotFound("User not found");
-
-            var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == characterId);
-            if (character == null)
-                return NotFound("Character not found");
-
-            if (user.LifeLevel < character.UnlockLevel)
-                return BadRequest("Character is locked");
-
-            user.ActiveCharacterId = characterId;
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            return Ok(new StatisticsDto
+            {
+                StreakCount = user.StreakCount,
+                Characters = characterStats
+            });
         }
     }
 }

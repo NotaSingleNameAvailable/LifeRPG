@@ -354,6 +354,25 @@ namespace LifeRPG.API.Controllers
                 userChar.Level = xpResult.newLevel;
                 userChar.CurrentXP = xpResult.newCurrentPoints;
                 userChar.LastUpdatedAt = DateTime.UtcNow;
+
+                //  Streak logic 
+                var today = DateTime.UtcNow.Date;
+                var lastDate = task.User.LastTaskDate?.Date;
+
+                if (lastDate == null || lastDate < today.AddDays(-1))
+                {
+                    // No activity yesterday or never , reset streak
+                    task.User.StreakCount = 1;
+                }
+                else if (lastDate == today.AddDays(-1))
+                {
+                    // Completed something yesterday , extend streak
+                    task.User.StreakCount += 1;
+                }
+                // if lastDate == today, do nothing , already counted today
+
+                task.User.LastTaskDate = DateTime.UtcNow;
+                //  Streak logic ends here
             }
             else
             {
