@@ -81,11 +81,18 @@
 
       <!-- Unlock State -->
       <div
-        class="text-center font-semibold mb-4"
+        class="text-center font-semibold mb-2"
         [class.text-green-400]="character.isUnlocked"
         [class.text-red-400]="!character.isUnlocked"
       >
         {{ character.isUnlocked ? 'Unlocked' : 'Locked' }}
+      </div>
+
+      <div
+        *ngIf="!character.isUnlocked"
+        class="text-center text-sm text-gray-300 mb-4"
+      >
+        Unlock at Life Level {{ character.unlockLevel }}
       </div>
 
       <div
