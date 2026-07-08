@@ -25,11 +25,14 @@
 
     <!-- Characters button -->
     <div class="flex-1 flex flex-col gap-3">
+      <button routerLink="/dashboard" class="text-left px-3 py-2 rounded hover:bg-gray-800">
+        🏠 Dashboard
+      </button>
       <button
             routerLink="/characters"
             class="text-left px-3 py-2 rounded hover:bg-gray-800"
           >
-            🧙 Characters
+            🎭 Characters
       </button>
       <button routerLink="/statistics" class="text-left px-3 py-2 rounded hover:bg-gray-800">
         📊 Statistics
@@ -171,21 +174,23 @@
           </div>
         </div>
 
-        <span
-          *ngIf="task.isCompleted  && task.awardedCharacterId"
-          class="mr-2 text-lg"
-        >
-          {{ getCharacterEmoji(task.awardedCharacterId) }}
-        </span>
+        <div class="flex items-center gap-2 shrink-0">
+          <span
+            *ngIf="task.isCompleted && task.awardedCharacterId"
+            class="text-lg"
+          >
+            {{ getCharacterEmoji(task.awardedCharacterId) }}
+          </span>
 
-        <button
-          type="button"
-          (click)="$event.stopPropagation(); completeTask(task)"
-          class="shrink-0 w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-gray-300"
-          title="Mark as active"
-        >
-          X
-        </button>
+          <button
+            type="button"
+            (click)="$event.stopPropagation(); completeTask(task)"
+            class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-gray-300"
+            title="Mark as active"
+          >
+            X
+          </button>
+        </div>
       </li>
     </ul>
   </div>

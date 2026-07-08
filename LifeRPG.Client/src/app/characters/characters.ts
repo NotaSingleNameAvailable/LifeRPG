@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink , Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
 interface CharacterCard {
@@ -28,8 +28,9 @@ export class Characters implements OnInit {
 
   userId = localStorage.getItem('userId') ?? '';
   characters: CharacterCard[] = [];
+  isDrawerOpen = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient , private router: Router) {}
 
   ngOnInit(): void {
     this.loadCharacters();
@@ -70,5 +71,15 @@ export class Characters implements OnInit {
       },
       error: (err) => console.error('Could not select character', err)
     });
+  }
+
+  toggleDrawer(): void { this.isDrawerOpen = !this.isDrawerOpen; }
+  closeDrawer(): void { this.isDrawerOpen = false; }
+
+  logout(): void {
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    this.router.navigate(['/login']);
   }
 }
