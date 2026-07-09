@@ -194,7 +194,7 @@ public class UserController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{userId}/me")]
+[HttpGet("{userId}/me")]
 public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
 {
     var user = await _context.Users
@@ -208,33 +208,42 @@ public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
     var active = user.CharacterProgress
         .FirstOrDefault(cp => cp.CharacterId == user.ActiveCharacterId);
 
-    var characters = user.CharacterProgress.Select(cp => new CharacterProgressDto
+    // Load all characters from the Characters table
+    var allCharacters = await _context.Characters
+        .AsNoTracking()
+        .OrderBy(c => c.Cid)
+        .ToListAsync();
+
+    var characters = allCharacters.Select(c =>
     {
-        Id = cp.Id.ToString(),
-        CharacterId = cp.CharacterId.ToString(),
-        Cid = cp.Character.Cid,
-        CharacterName = cp.Character.Name,
-        CharacterEmoji = cp.Character.Emoji,
-        TotalXP = cp.TotalXP,
-        CurrentXP = cp.CurrentXP,
-        Level = cp.Level,
-        IsUnlocked = cp.IsUnlocked
+        // Find progress row if it exists (may be null for locked/untouched characters)
+        var cp = user.CharacterProgress.FirstOrDefault(p => p.CharacterId == c.Id);
+
+        return new CharacterProgressDto
+        {
+            Id = c.Id.ToString(),
+            CharacterId = c.Id.ToString(),
+            Cid = c.Cid,
+            CharacterName = c.Name,
+            CharacterEmoji = c.Emoji,
+            UnlockLevel = c.UnlockLevel,    
+            IsUnlocked = user.LifeLevel >= c.UnlockLevel,
+            TotalXP = cp?.TotalXP ?? 0,
+            CurrentXP = cp?.CurrentXP ?? 0,
+            Level = cp?.Level ?? 1
+        };
     }).ToList();
 
     return Ok(new UserMeDto
     {
         Id = user.Id.ToString(),
         Username = user.Username,
-
         TotalLifePoints = user.TotalLifePoints,
         CurrentLifePoints = user.CurrentLifePoints,
         LifeLevel = user.LifeLevel,
-
         ActiveCharacterId = user.ActiveCharacterId?.ToString(),
-
         CharacterXP = active?.CurrentXP ?? 0,
         CharacterLevel = active?.Level ?? 1,
-
         Characters = characters
     });
 }

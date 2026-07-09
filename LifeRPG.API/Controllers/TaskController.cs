@@ -417,10 +417,47 @@ namespace LifeRPG.API.Controllers
                 userChar.Level = xpResult.newLevel;
                 userChar.CurrentXP = xpResult.newCurrentPoints;
                 userChar.LastUpdatedAt = DateTime.UtcNow;
+                // Check if active character is now locked due to level down
+                var forcedSwitch = false;
+                string? switchedToEmoji = null;
+                string? switchedToName = null;
+
+                if (task.User.ActiveCharacterId.HasValue)
+                {
+                    var activeChar = await _context.Characters
+                        .FirstOrDefaultAsync(c => c.Id == task.User.ActiveCharacterId.Value);
+
+                    if (activeChar != null && activeChar.UnlockLevel > task.User.LifeLevel)
+                    {
+                        // Find the default character (UnlockLevel = 0, lowest Cid = Magician)
+                        var defaultChar = await _context.Characters
+                            .Where(c => c.UnlockLevel == 0)
+                            .OrderBy(c => c.Cid)
+                            .FirstOrDefaultAsync();
+
+                        if (defaultChar != null)
+                        {
+                            task.User.ActiveCharacterId = defaultChar.Id;
+                            forcedSwitch = true;
+                            switchedToEmoji = defaultChar.Emoji;
+                            switchedToName = defaultChar.Name;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new CompleteTaskResultDto
+                {
+                    ForcedCharacterSwitch = forcedSwitch,
+                    SwitchedToEmoji = switchedToEmoji,
+                    SwitchedToName = switchedToName
+                });
             }
 
+            // Move SaveChangesAsync and return to completing branch only
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok(new CompleteTaskResultDto { ForcedCharacterSwitch = false });
         }
 
         private async Task<UserCharacterProgress> GetOrCreateCharacterProgressAsync(Guid userId, Guid characterId)

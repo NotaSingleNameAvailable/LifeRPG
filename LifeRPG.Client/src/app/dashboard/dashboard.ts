@@ -7,6 +7,7 @@ import { TaskService } from '../services/task.service';
 import { UserService } from '../core/services/user.service';
 import { RPGHelper } from '../helpers/rpg-helper';
 import { UserStateService } from '../core/services/user-state.service';
+import { CelebrationComponent } from '../shared/celebration/celebration.component';
 
 
 interface Task {
@@ -41,7 +42,7 @@ interface XpPopup {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CelebrationComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
 })
@@ -124,16 +125,22 @@ export class Dashboard implements OnInit {
     // Show XP popup
     this.showPopup(task.id, task.xpValue, isGaining, characterEmoji);
 
-    this.taskService.completeTask(task.id).subscribe({
-      next: () => {
-        this.loadTasks();
-        this.userState.load(this.userId);
-      },
-      error: (err) => {
-        console.error('Could not update task FULL ERROR:', err);
-        console.error('Backend message:', err.error);
+ this.taskService.completeTask(task.id).subscribe({
+    next: (result: any) => {
+      // Check if a forced character switch happened
+      if (result?.forcedCharacterSwitch) {
+        this.userState.forcedCharacterSwitch$.next({
+          emoji: result.switchedToEmoji,
+          name: result.switchedToName
+        });
       }
-    });
+      this.loadTasks();
+      this.userState.load(this.userId);
+    },
+    error: (err) => {
+      console.error('Could not update task FULL ERROR:', err);
+    }
+  });
   }
 
   // Progress bar helpers

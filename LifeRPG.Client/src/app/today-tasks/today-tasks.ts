@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { UserStateService } from '../core/services/user-state.service';
 import { RouterLink } from '@angular/router';
+import { CelebrationComponent } from '../shared/celebration/celebration.component';
 
 
 interface DailyTask {
@@ -28,7 +29,7 @@ interface DailyTaskPopup {
 @Component({
   selector: 'app-today-tasks',
   standalone: true,
-  imports: [CommonModule , RouterLink],
+  imports: [CommonModule , RouterLink, CelebrationComponent],
   templateUrl: './today-tasks.html',
   styleUrls: ['./today-tasks.css']
 })
@@ -220,7 +221,13 @@ export class TodayTasks implements OnInit {
       xpDelta: isCompleting ? this.TASK_XP : -this.TASK_XP,
       lpDelta: isCompleting ? this.TASK_LP : -this.TASK_LP
     }).subscribe({
-      next: () => {
+      next: (result: any) => {
+        if (result?.forcedCharacterSwitch) {
+          this.userState.forcedCharacterSwitch$.next({
+            emoji: result.switchedToEmoji,
+            name: result.switchedToName
+          });
+        }
         this.saveTodayTasks();
         this.userState.load(userId);
       },
