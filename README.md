@@ -42,4 +42,4 @@ Planned features:
 
 ## Screenshots
 
-screenshots/1
+Screenshots/1
