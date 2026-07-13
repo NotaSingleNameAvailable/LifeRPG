@@ -40,9 +40,9 @@ Planned features:
 - Better statistics and analytics
 - Mobile-friendly UI
 
-## Screenshots
+## Screenshots 🚧
 
-🚧🚧🚧 **Work in progress:** The screenshots below represent an early development stage of LifeRPG and are only included to showcase current progress. The UI is still under active development and will be significantly improved. Additional features, polish, animations, and improvements will be added as development continues.🚧🚧🚧
+**Work in progress:** The screenshots below represent an early development stage of LifeRPG and are only included to showcase current progress. The UI is still under active development and will be significantly improved. Additional features, polish, animations, and improvements will be added as development continues.
 
 ![Screenshot 1](Screenshots/1.png)
 
