@@ -31,5 +31,6 @@ namespace LifeRPG.Core.Models
         public virtual ICollection<UserCharacterProgress> CharacterProgress { get; set; } = new List<UserCharacterProgress>();
 
         public virtual ICollection<RpgTask> Tasks { get; set; } = new List<RpgTask>();
+        public virtual ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
     }
 }

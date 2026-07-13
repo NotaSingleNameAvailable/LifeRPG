@@ -128,5 +128,30 @@ namespace LifeRPG.Infrastructure.Data
                 context.SaveChanges();
             }
         }
+
+        public static void SeedAchievements(AppDbContext context)
+        {
+            if (!context.Achievements.Any())
+            {
+                context.Achievements.AddRange(
+                    // Task-based
+                    new Achievement { Key = "first_blood",    Name = "First Blood",     Emoji = "🩸", Description = "Complete your first task.",   Category = "tasks",  RequiredValue = 1   },
+                    new Achievement { Key = "getting_started", Name = "Getting Started", Emoji = "🌱", Description = "Complete 10 tasks.",           Category = "tasks",  RequiredValue = 10  },
+                    new Achievement { Key = "on_a_roll",      Name = "On a Roll",       Emoji = "🔄", Description = "Complete 50 tasks.",           Category = "tasks",  RequiredValue = 50  },
+                    new Achievement { Key = "relentless",     Name = "Relentless",      Emoji = "💯", Description = "Complete 100 tasks.",          Category = "tasks",  RequiredValue = 100 },
+                    new Achievement { Key = "unstoppable",    Name = "Unstoppable",     Emoji = "🚀", Description = "Complete 500 tasks.",          Category = "tasks",  RequiredValue = 500 },
+                    // Streak-based
+                    new Achievement { Key = "consistent",     Name = "Consistent",      Emoji = "📅", Description = "Reach a 3 day streak.",        Category = "streak", RequiredValue = 3   },
+                    new Achievement { Key = "week_warrior",   Name = "Week Warrior",    Emoji = "⚔️", Description = "Reach a 7 day streak.",        Category = "streak", RequiredValue = 7   },
+                    new Achievement { Key = "dedicated",      Name = "Dedicated",       Emoji = "🏆", Description = "Reach a 30 day streak.",       Category = "streak", RequiredValue = 30  },
+                    // LP Level-based
+                    new Achievement { Key = "newcomer",       Name = "Newcomer",        Emoji = "👋", Description = "Reach LP Level 2.",            Category = "level",  RequiredValue = 2   },
+                    new Achievement { Key = "rising",         Name = "Rising",          Emoji = "📈", Description = "Reach LP Level 5.",            Category = "level",  RequiredValue = 5   },
+                    new Achievement { Key = "veteran",        Name = "Veteran",         Emoji = "🎖️", Description = "Reach LP Level 10.",           Category = "level",  RequiredValue = 10  },
+                    new Achievement { Key = "legend",         Name = "Legend",          Emoji = "👑", Description = "Reach LP Level 20.",           Category = "level",  RequiredValue = 20  }
+                );
+                context.SaveChanges();
+            }
+        }
     }
 }

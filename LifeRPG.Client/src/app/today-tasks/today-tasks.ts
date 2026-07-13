@@ -228,6 +228,21 @@ export class TodayTasks implements OnInit {
             name: result.switchedToName
           });
         }
+        // The backend returns a result object that includes two lists:
+        // newlyEarned (achievements just gained) and newlyLost (achievements just lost).
+        // We loop through each list and fire an event for every achievement in it.
+        // CelebrationService is listening to these events and will show the popup modal for each one.
+        if (result?.newlyEarned?.length) {
+          result.newlyEarned.forEach((a: any) => {
+            this.userState.achievementEarned$.next(a);// fires "achievement earned" event → CelebrationService shows gold modal
+          });
+        }
+
+        if (result?.newlyLost?.length) {
+          result.newlyLost.forEach((a: any) => {
+            this.userState.achievementLost$.next(a);// fires "achievement lost" event → CelebrationService shows grey modal
+          });
+        }
         this.saveTodayTasks();
         this.userState.load(userId);
       },

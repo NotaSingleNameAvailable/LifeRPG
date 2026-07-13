@@ -83,3 +83,39 @@
     </button>
   </div>
 </div>
+
+<!-- Achievement Earned Modal -->
+<div *ngIf="celebration.currentEarned" class="fixed inset-0 z-60 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/80"></div>
+  <div class="relative bg-gray-800 border-2 border-yellow-400 rounded-3xl p-10 flex flex-col items-center gap-4 shadow-2xl max-w-sm w-full mx-4">
+    <div class="text-3xl font-extrabold text-yellow-300 text-center">🏅 Achievement Unlocked!</div>
+    <div class="text-7xl my-2">{{ celebration.currentEarned.emoji }}</div>
+    <div class="text-2xl font-bold text-white">{{ celebration.currentEarned.name }}</div>
+    <div class="text-gray-400 text-sm text-center">{{ celebration.currentEarned.description }}</div>
+    <button
+      type="button"
+      (click)="celebration.closeEarned()"
+      class="mt-4 bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold px-8 py-3 rounded-xl text-lg transition"
+    >
+      Close
+    </button>
+  </div>
+</div>
+
+<!-- Achievement Lost Modal -->
+<div *ngIf="celebration.currentLost" class="fixed inset-0 z-60 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/80"></div>
+  <div class="relative bg-gray-800 border-2 border-gray-500 rounded-3xl p-10 flex flex-col items-center gap-4 shadow-2xl max-w-sm w-full mx-4">
+    <div class="text-3xl font-extrabold text-gray-300 text-center">💔 Achievement Lost</div>
+    <div class="text-7xl my-2 grayscale opacity-60">{{ celebration.currentLost.emoji }}</div>
+    <div class="text-2xl font-bold text-gray-400">{{ celebration.currentLost.name }}</div>
+    <div class="text-gray-500 text-sm text-center">{{ celebration.currentLost.description }}</div>
+    <button
+      type="button"
+      (click)="celebration.closeLost()"
+      class="mt-4 bg-gray-600 hover:bg-gray-500 text-white font-extrabold px-8 py-3 rounded-xl text-lg transition"
+    >
+      Close
+    </button>
+  </div>
+</div>

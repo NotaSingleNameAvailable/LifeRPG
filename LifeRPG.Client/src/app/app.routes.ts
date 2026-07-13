@@ -6,6 +6,7 @@ import { TaskEditor } from './task-editor/task-editor';
 import { Characters } from './characters/characters';
 import { TodayTasks } from './today-tasks/today-tasks';
 import { Statistics } from './statistics/statistics';
+import { Achievements } from './achievements/achievements';
 
 export const routes: Routes = [
   { path: 'register', component: Register },
@@ -19,5 +20,6 @@ export const routes: Routes = [
   { path: 'task-editor/:id', component: TaskEditor },
   { path: '', redirectTo: '/register', pathMatch: 'full' },
 
-  { path: 'statistics', component: Statistics }
+  { path: 'statistics', component: Statistics },
+  { path: 'achievements', component: Achievements }
 ];

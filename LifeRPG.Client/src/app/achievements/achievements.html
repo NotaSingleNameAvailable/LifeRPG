@@ -1,0 +1,101 @@
+<!-- Menu button -->
+<button type="button" (click)="toggleDrawer()"
+  class="fixed top-4 left-4 z-50 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg">
+  ☰
+</button>
+
+<!-- Backdrop -->
+<div *ngIf="isDrawerOpen" class="fixed inset-0 bg-black/50 z-40" (click)="closeDrawer()"></div>
+
+<!-- Side drawer -->
+<div class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform transition-transform duration-300"
+  [class.translate-x-0]="isDrawerOpen" [class.-translate-x-full]="!isDrawerOpen">
+  <div class="flex flex-col h-full p-6 pb-24">
+    <div class="text-2xl font-bold mb-8">LifeRPG</div>
+    <div class="flex-1 flex flex-col gap-3">
+      <button routerLink="/dashboard" class="text-left px-3 py-2 rounded hover:bg-gray-800">🏠 Dashboard</button>
+      <button routerLink="/characters" class="text-left px-3 py-2 rounded hover:bg-gray-800">🧙 Characters</button>
+      <button routerLink="/statistics" class="text-left px-3 py-2 rounded hover:bg-gray-800">📊 Statistics</button>
+      <button routerLink="/achievements" class="text-left px-3 py-2 rounded hover:bg-gray-800">🏅 Achievements</button>
+    </div>
+    <button type="button" (click)="logout()"
+      class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg">
+      Logout
+    </button>
+  </div>
+</div>
+
+<!-- Page -->
+<div class="min-h-screen bg-gray-900 text-white p-8">
+  <h1 class="text-3xl font-bold mb-2 text-center">🏅 Achievements</h1>
+  <p class="text-center text-gray-400 mb-6">{{ earnedCount }} / {{ achievements.length }} unlocked</p>
+
+  <!-- Tasks -->
+  <div class="bg-gray-800 rounded-2xl p-6 mb-6">
+    <h2 class="text-lg font-bold mb-4 text-blue-400">✅ Task Achievements</h2>
+    <div class="grid grid-cols-1 gap-3">
+      <div *ngFor="let a of taskAchievements"
+        class="flex items-center gap-4 rounded-xl p-4 transition"
+        [class.bg-gray-700]="a.isEarned"
+        [class.bg-gray-700]="!a.isEarned"
+        [class.opacity-40]="!a.isEarned">
+        <div class="text-4xl" [class.grayscale]="!a.isEarned">{{ a.emoji }}</div>
+        <div class="flex-1">
+          <div class="font-bold text-white">{{ a.name }}</div>
+          <div class="text-sm text-gray-400">{{ a.description }}</div>
+          <div class="text-xs text-green-400 mt-1" *ngIf="a.isEarned && a.earnedAt">
+            Earned {{ a.earnedAt | date:'mediumDate' }}
+          </div>
+        </div>
+        <div *ngIf="a.isEarned" class="text-green-400 text-xl">✓</div>
+        <div *ngIf="!a.isEarned" class="text-gray-600 text-xl">🔒</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Streak -->
+  <div class="bg-gray-800 rounded-2xl p-6 mb-6">
+    <h2 class="text-lg font-bold mb-4 text-orange-400">🔥 Streak Achievements</h2>
+    <div class="grid grid-cols-1 gap-3">
+      <div *ngFor="let a of streakAchievements"
+        class="flex items-center gap-4 rounded-xl p-4 transition"
+        [class.bg-gray-700]="a.isEarned"
+        [class.bg-gray-700]="!a.isEarned"
+        [class.opacity-40]="!a.isEarned">
+        <div class="text-4xl" [class.grayscale]="!a.isEarned">{{ a.emoji }}</div>
+        <div class="flex-1">
+          <div class="font-bold text-white">{{ a.name }}</div>
+          <div class="text-sm text-gray-400">{{ a.description }}</div>
+          <div class="text-xs text-green-400 mt-1" *ngIf="a.isEarned && a.earnedAt">
+            Earned {{ a.earnedAt | date:'mediumDate' }}
+          </div>
+        </div>
+        <div *ngIf="a.isEarned" class="text-green-400 text-xl">✓</div>
+        <div *ngIf="!a.isEarned" class="text-gray-600 text-xl">🔒</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level -->
+  <div class="bg-gray-800 rounded-2xl p-6">
+    <h2 class="text-lg font-bold mb-4 text-yellow-400">⭐ Level Achievements</h2>
+    <div class="grid grid-cols-1 gap-3">
+      <div *ngFor="let a of levelAchievements"
+        class="flex items-center gap-4 rounded-xl p-4 transition"
+        [class.bg-gray-700]="a.isEarned"
+        [class.bg-gray-700]="!a.isEarned"
+        [class.opacity-40]="!a.isEarned">
+        <div class="text-4xl" [class.grayscale]="!a.isEarned">{{ a.emoji }}</div>
+        <div class="flex-1">
+          <div class="font-bold text-white">{{ a.name }}</div>
+          <div class="text-sm text-gray-400">{{ a.description }}</div>
+          <div class="text-xs text-green-400 mt-1" *ngIf="a.isEarned && a.earnedAt">
+            Earned {{ a.earnedAt | date:'mediumDate' }}
+          </div>
+        </div>
+        <div *ngIf="a.isEarned" class="text-green-400 text-xl">✓</div>
+        <div *ngIf="!a.isEarned" class="text-gray-600 text-xl">🔒</div>
+      </div>
+    </div>
+  </div>
+</div>

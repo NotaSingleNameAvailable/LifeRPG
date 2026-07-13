@@ -38,6 +38,7 @@ using (var scope = app.Services.CreateScope())
 
     DataSeeder.SeedCategories(db);
     DataSeeder.SeedCharacters(db);
+    DataSeeder.SeedAchievements(db);
 
 }
 

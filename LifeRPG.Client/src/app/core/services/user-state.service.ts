@@ -22,6 +22,12 @@ export interface ForcedSwitchEvent {
   name: string;
 }
 
+export interface AchievementEvent {
+  name: string;
+  emoji: string;
+  description: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UserStateService {
   private state$ = new BehaviorSubject<UserState | null>(null);
@@ -31,6 +37,8 @@ export class UserStateService {
   lifeLevelUp$ = new Subject<void>();
   characterUnlocked$ = new Subject<CharacterUnlockEvent>();
   forcedCharacterSwitch$ = new Subject<ForcedSwitchEvent>();
+  achievementEarned$ = new Subject<AchievementEvent>();
+  achievementLost$ = new Subject<AchievementEvent>();
 
 
   constructor(private http: HttpClient) {}
