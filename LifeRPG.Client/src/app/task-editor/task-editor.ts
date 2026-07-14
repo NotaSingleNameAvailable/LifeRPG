@@ -105,7 +105,7 @@ export class TaskEditor implements OnInit {
      LOAD TASK (EDIT MODE)
      ========================================================= */
   loadTask(taskId: string): void {
-    this.taskService.getTasks().subscribe({
+    this.taskService.getTasks(this.userId).subscribe({
       next: (tasks) => {
         const task = tasks.find(t => t.id === taskId && t.userId === this.userId);
 

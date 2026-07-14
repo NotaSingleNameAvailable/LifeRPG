@@ -18,13 +18,14 @@ namespace LifeRPG.API.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetTasks()
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetTasks(Guid userId)
         {
             var tasks = await _context.Tasks
                 .AsNoTracking()
                 .Include(t => t.User)
                 .Include(t => t.Category)
+                .Where(t => t.UserId == userId) 
                 .Select(t => new TaskResponseDto
                 {
                     Id = t.Id,

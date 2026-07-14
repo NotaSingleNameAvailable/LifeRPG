@@ -150,7 +150,8 @@ export class TodayTasks implements OnInit {
   // ======================================
 
   private getTodayKey(): string {
-    return new Date().toISOString().split('T')[0];
+    const userId = localStorage.getItem('userId') ?? 'unknown';
+    return `todayTasks_${userId}_${new Date().toISOString().split('T')[0]}`;
   }
 
   private loadTodayTasks(): void {

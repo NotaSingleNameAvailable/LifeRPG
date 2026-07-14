@@ -10,8 +10,8 @@ export class TaskService {
 
   constructor(private http: HttpClient) {}
 
-  getTasks(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl);
+  getTasks(userId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${userId}`);
   }
 
   createTask(task: any): Observable<any> {

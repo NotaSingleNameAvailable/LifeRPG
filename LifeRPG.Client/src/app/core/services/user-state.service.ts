@@ -22,6 +22,11 @@ export interface ForcedSwitchEvent {
   name: string;
 }
 
+export interface CharacterLockedEvent {
+  emoji: string;
+  name: string;
+}
+
 export interface AchievementEvent {
   name: string;
   emoji: string;
@@ -37,6 +42,7 @@ export class UserStateService {
   lifeLevelUp$ = new Subject<void>();
   characterUnlocked$ = new Subject<CharacterUnlockEvent>();
   forcedCharacterSwitch$ = new Subject<ForcedSwitchEvent>();
+  characterLocked$ = new Subject<CharacterLockedEvent>();
   achievementEarned$ = new Subject<AchievementEvent>();
   achievementLost$ = new Subject<AchievementEvent>();
 
@@ -94,8 +100,20 @@ export class UserStateService {
               this.characterUnlocked$.next({ emoji: c.emoji, name: c.name });
             });
           }
-        }
 
+            if (newState.lpLevel < old.lpLevel) {
+              const oldLevel = old.lpLevel;
+              const newLevel = newState.lpLevel;
+
+              const nowLocked = newState.allCharacters.filter(c =>
+                c.unlockLevel > newLevel && c.unlockLevel <= oldLevel
+              );
+
+              nowLocked.forEach(c => {
+                this.characterLocked$.next({ emoji: c.emoji, name: c.name });
+              });
+            }
+        }
         this.state$.next(newState);
       });
   }

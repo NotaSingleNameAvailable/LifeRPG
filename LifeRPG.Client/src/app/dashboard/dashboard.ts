@@ -102,7 +102,7 @@ export class Dashboard implements OnInit {
 
 
   loadTasks(): void {
-    this.taskService.getTasks().subscribe({
+    this.taskService.getTasks(this.userId).subscribe({
       next: (data) => this.tasks = data.filter(task => this.shouldTaskAppearToday(task)).map(task => ({...task,awardedCharacterId: task.awardedCharacterId ?? null})),
       error: (err) => console.error('Error loading tasks', err)
     });
