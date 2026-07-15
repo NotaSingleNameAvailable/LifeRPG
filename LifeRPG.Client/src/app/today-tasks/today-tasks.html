@@ -57,6 +57,19 @@
 <!--End of Side drawer -->
 
 
+<!-- Global popup layer -->
+<div
+  *ngFor="let popup of xpPopups"
+  class="xp-popup"
+  [class.gain]="popup.type === 'gain'"
+  [class.loss]="popup.type === 'loss'"
+  [style.left]="'50vw'"
+  [style.top.px]="popup.y"
+>
+  {{ popup.text }}
+</div>
+
+
 <!--Start of today's tasks page -->
 <div class="min-h-screen bg-gray-900 text-white p-8 pb-32">
 
@@ -115,23 +128,12 @@
 
     <ul class="space-y-3">
 
-      <li
-        *ngFor="let task of dailyTasks"
-        (click)="toggleTask(task)"
-        class="cursor-pointer select-none bg-gray-700 rounded-lg p-4 transition hover:bg-gray-600"
-      >
+        <li
+          *ngFor="let task of dailyTasks"
+          (click)="toggleTask(task, $event)"
+          class="relative cursor-pointer select-none bg-gray-700 rounded-lg p-4 transition hover:bg-gray-600"
+        >
 
-        <!-- Popups -->
-          <ng-container *ngFor="let popup of xpPopups">
-            <div
-              *ngIf="popup.taskId === task.id"
-              class="xp-popup"
-              [class.gain]="popup.type === 'gain'"
-              [class.loss]="popup.type === 'loss'"
-            >
-              {{ popup.text }}
-            </div>
-          </ng-container>
 
         <div class="flex items-center gap-4">
 

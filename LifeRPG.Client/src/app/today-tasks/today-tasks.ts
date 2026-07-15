@@ -21,9 +21,9 @@ interface ActiveCharacterView {
 
 interface DailyTaskPopup {
   id: number;
-  taskId: number;
   text: string;
   type: 'gain' | 'loss';
+  y: number;
 }
 
 @Component({
@@ -181,7 +181,7 @@ export class TodayTasks implements OnInit {
   // TOGGLE TASK
   // ======================================
 
-  toggleTask(task: DailyTask): void {
+  toggleTask(task: DailyTask, event: MouseEvent): void {
     const userId = localStorage.getItem('userId') ?? '';
     if (!userId) return;
 
@@ -209,7 +209,7 @@ export class TodayTasks implements OnInit {
       : null;
 
     //  Show popup
-    this.showPopup(task.id, this.TASK_XP, isCompleting, characterEmoji);
+    this.showPopup(this.TASK_XP, this.TASK_LP, isCompleting, characterEmoji, event.clientY);
 
     task.completed = isCompleting;
 
@@ -304,19 +304,20 @@ export class TodayTasks implements OnInit {
   xpPopups: DailyTaskPopup[] = [];
   private popupCounter = 0;
 
-  showPopup(taskId: number, xpValue: number, isGaining: boolean, characterEmoji: string | null): void {
+  showPopup(xpValue: number, lpValue: number, isGaining: boolean, characterEmoji: string | null, y: number): void {
     const sign = isGaining ? '+' : '-';
     const emoji = characterEmoji ? `${characterEmoji} ` : '';
-    const text = `${emoji}${sign}${xpValue} XP    ${sign}${xpValue} LP`;
+    const text = `${emoji}${sign}${xpValue} XP    ${sign}${lpValue} LP`;
 
     const popup: DailyTaskPopup = {
       id: ++this.popupCounter,
-      taskId,
       text,
-      type: isGaining ? 'gain' : 'loss'
+      type: isGaining ? 'gain' : 'loss',
+      y
     };
 
     this.xpPopups.push(popup);
+
     setTimeout(() => {
       this.xpPopups = this.xpPopups.filter(p => p.id !== popup.id);
     }, 1400);

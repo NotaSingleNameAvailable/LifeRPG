@@ -34,9 +34,9 @@ interface UserStats {
 
 interface XpPopup {
   id: number;
-  taskId: string;
   text: string;
   type: 'gain' | 'loss';
+  y: number; //  viewport Y position
 }
 
 @Component({
@@ -110,7 +110,7 @@ export class Dashboard implements OnInit {
 
 
 
-  completeTask(task: Task): void {
+  completeTask(task: Task, event: MouseEvent): void {
     const isGaining = !task.isCompleted; // true = completing, false = uncompleting
 
     // For uncompleting: the character losing XP is the one who earned it, not the active one
@@ -123,7 +123,8 @@ export class Dashboard implements OnInit {
       : null;
 
     // Show XP popup
-    this.showPopup(task.id, task.xpValue, isGaining, characterEmoji);
+      this.showPopup(task.xpValue, isGaining, characterEmoji, event.clientY);
+
 
  this.taskService.completeTask(task.id).subscribe({
     next: (result: any) => {
@@ -288,16 +289,16 @@ isTaskCompletedToday(task: Task): boolean {
   xpPopups: XpPopup[] = [];
   private popupCounter = 0;
 
-  showPopup(taskId: string, xpValue: number, isGaining: boolean, characterEmoji: string | null): void {
+  showPopup(xpValue: number, isGaining: boolean, characterEmoji: string | null, y: number): void {
     const sign = isGaining ? '+' : '-';
     const emoji = characterEmoji ? `${characterEmoji} ` : '';
     const text = `${emoji}${sign}${xpValue} XP    ${sign}${xpValue} LP`;
 
     const popup: XpPopup = {
       id: ++this.popupCounter,
-      taskId,
       text,
-      type: isGaining ? 'gain' : 'loss'
+      type: isGaining ? 'gain' : 'loss',
+      y
     };
 
     this.xpPopups.push(popup);

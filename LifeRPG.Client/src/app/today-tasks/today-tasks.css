@@ -5,16 +5,14 @@
 }
 
 .xp-popup {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: fixed;
   pointer-events: none;
   font-size: 1.1rem;
   font-weight: bold;
   white-space: nowrap;
-  z-index: 100;
+  z-index: 9999;
   animation: floatUp 1.4s ease-out forwards;
+  transform: translate(-50%, -50%);
 }
 
 .xp-popup.gain { color: #4ade80; }
