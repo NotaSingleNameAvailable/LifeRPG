@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { UserStateService } from '../core/services/user-state.service';
+
 
 interface AchievementView {
   id: string;
@@ -27,7 +29,7 @@ export class Achievements implements OnInit {
   achievements: AchievementView[] = [];
   isDrawerOpen = false;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router , private userState: UserStateService) {}
 
   ngOnInit(): void {
     if (!this.userId) { this.router.navigate(['/login']); return; }
@@ -52,6 +54,7 @@ export class Achievements implements OnInit {
   closeDrawer(): void { this.isDrawerOpen = false; }
 
   logout(): void {
+    this.userState.clear();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');

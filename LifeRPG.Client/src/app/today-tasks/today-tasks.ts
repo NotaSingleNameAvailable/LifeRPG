@@ -287,6 +287,7 @@ export class TodayTasks implements OnInit {
   }
 
   logout(): void {
+    this.userState.clear();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');

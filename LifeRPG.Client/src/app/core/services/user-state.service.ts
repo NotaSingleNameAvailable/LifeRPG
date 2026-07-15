@@ -120,4 +120,5 @@ export class UserStateService {
 
   getState() { return this.state$.asObservable(); }
   getSnapshot() { return this.state$.value; }
+  clear(): void {this.state$.next(null); }
 }

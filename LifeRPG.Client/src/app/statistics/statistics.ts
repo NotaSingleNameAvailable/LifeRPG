@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { UserStateService } from '../core/services/user-state.service';
 
 interface CharacterStat {
   characterId: string;
@@ -31,7 +32,7 @@ export class Statistics implements OnInit {
   // Side drawer
   isDrawerOpen = false;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router, private userState: UserStateService) {}
 
   ngOnInit(): void {
     if (!this.userId) {
@@ -80,6 +81,7 @@ export class Statistics implements OnInit {
   closeDrawer(): void { this.isDrawerOpen = false; }
 
   logout(): void {
+    this.userState.clear();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');

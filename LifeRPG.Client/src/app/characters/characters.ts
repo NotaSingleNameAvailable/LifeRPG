@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink , Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { UserStateService } from '../core/services/user-state.service';
 
 interface CharacterCard {
   id: string;
@@ -30,7 +31,7 @@ export class Characters implements OnInit {
   characters: CharacterCard[] = [];
   isDrawerOpen = false;
 
-  constructor(private http: HttpClient , private router: Router) {}
+  constructor(private http: HttpClient , private router: Router, private userState: UserStateService) {}
 
   ngOnInit(): void {
     this.loadCharacters();
@@ -77,6 +78,7 @@ export class Characters implements OnInit {
   closeDrawer(): void { this.isDrawerOpen = false; }
 
   logout(): void {
+    this.userState.clear();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
