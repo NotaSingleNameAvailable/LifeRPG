@@ -44,9 +44,13 @@
         Register
       </button>
 
-      <p *ngIf="message" class="text-center text-sm mt-3 text-green-600">
-        {{ message }}
-      </p>
+        <p *ngIf="message"
+          class="text-center text-sm mt-3"
+          [class.text-green-600]="!isError"
+          [class.text-red-600]="isError"
+        >
+          {{ message }}
+        </p>
     </form>
   </div>
 
