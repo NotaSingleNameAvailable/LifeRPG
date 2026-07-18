@@ -388,7 +388,7 @@ public async Task<IActionResult> CompleteTask(Guid id)
         var allAchievements = await _context.Achievements.ToListAsync();
 
         var totalTasksCompleted = await _context.Tasks
-            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted);
+            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted) + 1;
 
         var earned = AchievementHelper.GetEarned(
             allAchievements,
@@ -461,7 +461,25 @@ public async Task<IActionResult> CompleteTask(Guid id)
             task.UserId,
             task.AwardedCharacterId.Value
         );
+        // ===== BONUS RECALCULATION ON UNCOMPLETE =====
+        var awardedCharacter = await _context.Characters
+            .FirstOrDefaultAsync(c => c.Id == task.AwardedCharacterId.Value);
 
+        var taskCategoryForUndo = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == task.CategoryId);
+
+        var undoMultiplier = 1.0;
+        if (awardedCharacter?.BonusCategoryName != null &&
+            taskCategoryForUndo?.Name == awardedCharacter.BonusCategoryName)
+        {
+            undoMultiplier = 1.2;
+        }
+
+        var xpToRemove = (int)Math.Round(task.XPValue * undoMultiplier);
+        var lpToRemove = (int)Math.Round(task.XPValue * undoMultiplier / 2.0);
+        // ===== BONUS RECALCULATION END =====
+
+        
         task.IsCompleted = false;
         task.CompletedAt = null;
 
@@ -473,7 +491,7 @@ public async Task<IActionResult> CompleteTask(Guid id)
         var lpResult = ProgressionHelper.RemovePoints(
             task.User.LifeLevel,
             task.User.CurrentLifePoints,
-            task.XPValue
+            lpToRemove
         );
 
         task.User.LifeLevel = lpResult.newLevel;
@@ -487,7 +505,7 @@ public async Task<IActionResult> CompleteTask(Guid id)
         var xpResult = ProgressionHelper.RemovePoints(
             userChar.Level,
             userChar.CurrentXP,
-            task.XPValue
+            xpToRemove
         );
 
         userChar.Level = xpResult.newLevel;
@@ -525,7 +543,8 @@ public async Task<IActionResult> CompleteTask(Guid id)
         var allAchievements = await _context.Achievements.ToListAsync();
 
         var totalTasksCompleted = await _context.Tasks
-            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted);
+            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted) - 1;
+            if (totalTasksCompleted < 0) totalTasksCompleted = 0;
 
         var earned = AchievementHelper.GetEarned(
             allAchievements,
@@ -579,8 +598,8 @@ public async Task<IActionResult> CompleteTask(Guid id)
             ForcedCharacterSwitch = forcedSwitch,
             SwitchedToEmoji = switchedToEmoji,
             SwitchedToName = switchedToName,
-            ActualXpAwarded = -task.XPValue, 
-            ActualLpAwarded = -(int)Math.Round(task.XPValue / 2.0),   
+            ActualXpAwarded = -xpToRemove,
+            ActualLpAwarded = -lpToRemove,   
             NewlyEarned = newlyEarned.Select(a => new AchievementDto
             {
                 Name = a.Name, Emoji = a.Emoji, Description = a.Description

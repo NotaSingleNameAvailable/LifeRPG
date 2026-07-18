@@ -283,19 +283,20 @@ public async Task<IActionResult> ApplyTaskDelta(string userId, [FromBody] ApplyT
     }
 
 
-    // ===== BONUS CALCULATION FOR TODAY'S TASKS =====
-    if (!string.IsNullOrEmpty(dto.CategoryName) && dto.XpDelta > 0)
-    {
-        var activeChar = await _context.Characters
-            .FirstOrDefaultAsync(c => c.Id == dto.CharacterId);
-
-        if (activeChar?.BonusCategoryName == dto.CategoryName)
+        // ===== BONUS CALCULATION FOR TODAY'S TASKS =====
+        if (!string.IsNullOrEmpty(dto.CategoryName))
         {
-            dto.XpDelta = (int)Math.Round(dto.XpDelta * 1.2);
-            dto.LpDelta = (int)Math.Round(dto.LpDelta * 1.2);
+            var activeChar = await _context.Characters
+                .FirstOrDefaultAsync(c => c.Id == dto.CharacterId);
+
+            if (activeChar?.BonusCategoryName == dto.CategoryName)
+            {
+                // Apply bonus to both positive (complete) and negative (uncomplete) deltas
+                dto.XpDelta = (int)Math.Round(dto.XpDelta * 1.2);
+                dto.LpDelta = (int)Math.Round(dto.LpDelta * 1.2);
+            }
         }
-    }
-    // ===== BONUS CALCULATION END =====
+        // ===== BONUS CALCULATION END =====
 
 
     // Apply character XP delta
