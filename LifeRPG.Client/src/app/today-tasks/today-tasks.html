@@ -152,9 +152,9 @@
             class="flex-1 transition"
             [class.line-through]="task.completed"
             [class.opacity-50]="task.completed"
-            [class.blur-[1px]]="task.completed"
           >
             {{ task.title }}
+            <span class="ml-1 text-sm">{{ task.categoryEmoji }}</span>
           </div>
 
          <!--  Character emoji who completed it -->

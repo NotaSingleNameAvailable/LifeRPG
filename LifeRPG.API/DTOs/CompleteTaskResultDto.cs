@@ -14,5 +14,7 @@ namespace LifeRPG.API.DTOs
         public string? SwitchedToName { get; set; }
         public List<AchievementDto> NewlyEarned { get; set; } = new();
         public List<AchievementDto> NewlyLost { get; set; } = new();
+        public int ActualXpAwarded { get; set; } = 0;
+        public int ActualLpAwarded { get; set; } = 0;
     }
 }

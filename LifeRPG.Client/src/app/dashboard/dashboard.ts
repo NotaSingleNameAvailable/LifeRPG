@@ -16,6 +16,7 @@ interface Task {
   title: string;
   description?: string;
   categoryId: string;
+  categoryIcon?: string
   xpValue: number;
   isCompleted: boolean;
   recurrencePattern?: string;
@@ -122,12 +123,15 @@ export class Dashboard implements OnInit {
       ? this.getCharacterEmoji(relevantCharacterId)
       : null;
 
-    // Show XP popup
-      this.showPopup(task.xpValue, isGaining, characterEmoji, event.clientY);
-
 
  this.taskService.completeTask(task.id).subscribe({
     next: (result: any) => {
+      const actualXp = Math.abs(result?.actualXpAwarded ?? task.xpValue);
+      const actualLp = Math.abs(result?.actualLpAwarded ?? task.xpValue);
+      this.showPopup(actualXp, actualLp, isGaining, characterEmoji, event.clientX, event.clientY);
+
+
+
       // Check if a forced character switch happened
       if (result?.forcedCharacterSwitch) {
         this.userState.forcedCharacterSwitch$.next({
@@ -195,6 +199,7 @@ export class Dashboard implements OnInit {
   }
 
   logout(): void {
+    this.userState.clear();
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
@@ -289,10 +294,10 @@ isTaskCompletedToday(task: Task): boolean {
   xpPopups: XpPopup[] = [];
   private popupCounter = 0;
 
-  showPopup(xpValue: number, isGaining: boolean, characterEmoji: string | null, y: number): void {
+  showPopup(xpValue: number, lpValue: number, isGaining: boolean, characterEmoji: string | null, x: number, y: number): void {
     const sign = isGaining ? '+' : '-';
     const emoji = characterEmoji ? `${characterEmoji} ` : '';
-    const text = `${emoji}${sign}${xpValue} XP    ${sign}${xpValue} LP`;
+    const text = `${emoji}${sign}${xpValue} XP    ${sign}${lpValue} LP`;
 
     const popup: XpPopup = {
       id: ++this.popupCounter,

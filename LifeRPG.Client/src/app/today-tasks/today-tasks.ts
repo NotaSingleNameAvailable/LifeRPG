@@ -12,6 +12,8 @@ interface DailyTask {
   title: string;
   completed: boolean;
   awardedCharacterId?: string | null;
+  categoryName: string;  
+  categoryEmoji: string; 
 }
 
 interface ActiveCharacterView {
@@ -48,22 +50,22 @@ export class TodayTasks implements OnInit {
   private readonly TASK_XP = 10;
   private readonly TASK_LP = 10;
 
-  private readonly TASK_POOL: string[] = [
-    'Drink 2L of water',
-    'Take a 10 minute walk',
-    'Stretch for 5 minutes',
-    'Read 10 pages',
-    'Clean your desk',
-    'Eat a fruit',
-    'Go outside for sunlight',
-    'Do 20 pushups',
-    'Meditate for 5 minutes',
-    'Write tomorrow\'s plan',
-    'No sugary drinks today',
-    'Review your goals',
-    'Take vitamins',
-    'Make your bed',
-    'Listen to an educational podcast'
+  private readonly TASK_POOL: { title: string; categoryName: string; categoryEmoji: string }[] = [
+    { title: 'Drink 2L of water',                   categoryName: 'Nutrition',    categoryEmoji: '🥗' },
+    { title: 'Take a 10 minute walk',               categoryName: 'Fitness',      categoryEmoji: '💪' },
+    { title: 'Stretch for 5 minutes',               categoryName: 'Fitness',      categoryEmoji: '💪' },
+    { title: 'Read 10 pages',                       categoryName: 'Learning',     categoryEmoji: '📘' },
+    { title: 'Clean your desk',                     categoryName: 'Discipline',   categoryEmoji: '⚡' },
+    { title: 'Eat a fruit',                         categoryName: 'Nutrition',    categoryEmoji: '🥗' },
+    { title: 'Go outside for sunlight',             categoryName: 'Adventure',    categoryEmoji: '🗺️' },
+    { title: 'Do 20 pushups',                       categoryName: 'Fitness',      categoryEmoji: '💪' },
+    { title: 'Meditate for 5 minutes',              categoryName: 'Mindfulness',  categoryEmoji: '🧘' },
+    { title: 'Write tomorrow\'s plan',              categoryName: 'Discipline',   categoryEmoji: '⚡' },
+    { title: 'No sugary drinks today',              categoryName: 'Nutrition',    categoryEmoji: '🥗' },
+    { title: 'Review your goals',                   categoryName: 'Mindfulness',  categoryEmoji: '🧘' },
+    { title: 'Take vitamins',                       categoryName: 'Nutrition',    categoryEmoji: '🥗' },
+    { title: 'Make your bed',                       categoryName: 'Discipline',   categoryEmoji: '⚡' },
+    { title: 'Listen to an educational podcast',    categoryName: 'Learning',     categoryEmoji: '📘' },
   ];
 
   constructor(
@@ -167,11 +169,13 @@ export class TodayTasks implements OnInit {
 
     this.dailyTasks = shuffled
       .slice(0, 6)
-      .map((title, index) => ({
+      .map((item, index) => ({
         id: index + 1,
-        title,
+        title: item.title,
         completed: false,
-        awardedCharacterId: null
+        awardedCharacterId: null,
+        categoryName: item.categoryName, 
+        categoryEmoji: item.categoryEmoji  
       }));
 
     this.saveTodayTasks();
@@ -208,9 +212,6 @@ export class TodayTasks implements OnInit {
       ? this.getCharacterEmoji(relevantCharacterId)
       : null;
 
-    //  Show popup
-    this.showPopup(this.TASK_XP, this.TASK_LP, isCompleting, characterEmoji, event.clientY);
-
     task.completed = isCompleting;
 
     if (!isCompleting) {
@@ -220,9 +221,14 @@ export class TodayTasks implements OnInit {
     this.http.post(`http://localhost:5266/api/user/${userId}/apply-task-delta`, {
       characterId: targetCharacterId,
       xpDelta: isCompleting ? this.TASK_XP : -this.TASK_XP,
-      lpDelta: isCompleting ? this.TASK_LP : -this.TASK_LP
+      lpDelta: isCompleting ? this.TASK_LP : -this.TASK_LP,
+      categoryName: task.categoryName
     }).subscribe({
       next: (result: any) => {
+        const actualXp = Math.abs(result?.actualXpAwarded ?? this.TASK_XP);
+        const actualLp = Math.abs(result?.actualLpAwarded ?? this.TASK_LP);
+        //  Show popup
+        this.showPopup(actualXp, actualLp, isCompleting, characterEmoji, event.clientY)
         if (result?.forcedCharacterSwitch) {
           this.userState.forcedCharacterSwitch$.next({
             emoji: result.switchedToEmoji,

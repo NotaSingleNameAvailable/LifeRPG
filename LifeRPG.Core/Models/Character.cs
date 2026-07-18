@@ -19,6 +19,8 @@ namespace LifeRPG.Core.Models
 
         public int UnlockLevel { get; set; } = 1;
 
+        public string? BonusCategoryName { get; set; }
+
         public virtual ICollection<UserCharacterProgress> UserProgress { get; set; } = new List<UserCharacterProgress>();
     }
 }

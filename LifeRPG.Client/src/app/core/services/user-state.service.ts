@@ -77,7 +77,7 @@ export class UserStateService {
 
         // Compare old state vs new state before replacing
         const old = this.state$.value;
-        if (old) {
+        if (old && old.userId === userId) {
           // Character level up
           if (newState.characterLevel > old.characterLevel) {
             this.characterLevelUp$.next();

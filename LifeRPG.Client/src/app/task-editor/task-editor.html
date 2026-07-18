@@ -67,14 +67,15 @@
       <select
         [(ngModel)]="taskForm.categoryId"
         name="categoryId"
-        
         class="p-3 rounded bg-gray-700 text-white border-2"
         [class.border-red-500]="isCategoryInvalid()"
         [class.border-gray-600]="!isCategoryInvalid()"
+        [style.border-left-color]="getSelectedCategoryColor()"
+        [style.border-left-width]="'4px'"
       >
         <option value="">Select category</option>
         <option *ngFor="let category of categories" [value]="category.id">
-          {{ category.name }}
+          {{ category.icon }} {{ category.name }}
         </option>
       </select>
 

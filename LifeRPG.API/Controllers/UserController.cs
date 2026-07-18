@@ -230,7 +230,8 @@ public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
             IsUnlocked = user.LifeLevel >= c.UnlockLevel,
             TotalXP = cp?.TotalXP ?? 0,
             CurrentXP = cp?.CurrentXP ?? 0,
-            Level = cp?.Level ?? 1
+            Level = cp?.Level ?? 1,
+            BonusCategoryName = c.BonusCategoryName
         };
     }).ToList();
 
@@ -280,6 +281,22 @@ public async Task<IActionResult> ApplyTaskDelta(string userId, [FromBody] ApplyT
 
         _context.UserCharacterProgress.Add(characterProgress);
     }
+
+
+    // ===== BONUS CALCULATION FOR TODAY'S TASKS =====
+    if (!string.IsNullOrEmpty(dto.CategoryName) && dto.XpDelta > 0)
+    {
+        var activeChar = await _context.Characters
+            .FirstOrDefaultAsync(c => c.Id == dto.CharacterId);
+
+        if (activeChar?.BonusCategoryName == dto.CategoryName)
+        {
+            dto.XpDelta = (int)Math.Round(dto.XpDelta * 1.2);
+            dto.LpDelta = (int)Math.Round(dto.LpDelta * 1.2);
+        }
+    }
+    // ===== BONUS CALCULATION END =====
+
 
     // Apply character XP delta
     if (dto.XpDelta > 0)
@@ -353,7 +370,9 @@ public async Task<IActionResult> ApplyTaskDelta(string userId, [FromBody] ApplyT
         user.CurrentLifePoints,
         user.LifeLevel,
         characterProgress.CurrentXP,
-        characterProgress.Level
+        characterProgress.Level,
+        ActualXpAwarded = dto.XpDelta,
+        ActualLpAwarded = dto.LpDelta
     });
 }
 }

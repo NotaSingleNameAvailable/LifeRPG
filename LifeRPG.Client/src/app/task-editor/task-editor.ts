@@ -258,5 +258,9 @@ isFormInvalid(): boolean {
     return this.getLpFromDifficulty();
   }
 
+  getSelectedCategoryColor(): string {
+  const cat = this.categories.find(c => c.id === this.taskForm.categoryId);
+  return cat?.colorCode ?? '#4B5563'; // default gray
+}
 
 }

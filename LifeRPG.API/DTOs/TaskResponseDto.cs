@@ -31,5 +31,6 @@ namespace LifeRPG.API.DTOs
         public string? CategoryName { get; set; }
         
         public Guid? AwardedCharacterId { get; set; }
+        public string? CategoryIcon { get; set; }
     }
 }

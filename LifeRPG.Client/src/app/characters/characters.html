@@ -126,6 +126,10 @@
         Level {{ character.level }}
       </div>
 
+      <div class="text-center text-xs text-purple-400 mt-1" *ngIf="character.bonusCategoryName">
+        +20% XP on {{ character.bonusCategoryName }} tasks
+      </div>
+
     </div>
 
   </div>

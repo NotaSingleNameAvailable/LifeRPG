@@ -125,7 +125,10 @@
 
 
         <div class="min-w-0">
-          <div class="font-semibold">{{ task.title }}</div>
+          <div class="font-semibold">
+            {{ task.title }}
+            <span *ngIf="task.categoryIcon" class="ml-1 text-sm">{{ task.categoryIcon }}</span>
+          </div>
           <div class="text-sm text-gray-300" *ngIf="task.description">
             {{ task.description }}
           </div>
@@ -159,9 +162,10 @@
         >
 
         <div class="min-w-0">
-          <div class="font-semibold line-through text-gray-400">
-            {{ task.title }}
-          </div>
+        <div class="font-semibold line-through text-gray-400">
+          {{ task.title }}
+          <span *ngIf="task.categoryIcon" class="ml-1 text-sm">{{ task.categoryIcon }}</span>
+        </div>
           <div class="text-sm line-through text-gray-500" *ngIf="task.description">
             {{ task.description }}
           </div>

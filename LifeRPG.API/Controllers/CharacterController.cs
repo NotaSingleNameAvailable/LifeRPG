@@ -60,7 +60,8 @@ namespace LifeRPG.API.Controllers
                     TotalXP = progress?.TotalXP ?? 0,
                     CurrentXP = progress?.CurrentXP ?? 0,
                     Level = progress?.Level ?? 1,
-                    TasksCompleted = taskCount?.Count ?? 0
+                    TasksCompleted = taskCount?.Count ?? 0,
+                    BonusCategoryName = c.BonusCategoryName
                 };
             }).ToList();
 

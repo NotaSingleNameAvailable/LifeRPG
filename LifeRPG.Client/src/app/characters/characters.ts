@@ -16,6 +16,7 @@ interface CharacterCard {
   totalXP: number;
   currentXP: number;
   level: number;
+  bonusCategoryName?: string;
 }
 
 @Component({

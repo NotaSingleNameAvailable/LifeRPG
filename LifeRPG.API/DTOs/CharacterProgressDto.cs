@@ -18,4 +18,5 @@ public class CharacterProgressDto
     public int CurrentXP { get; set; }
     public int Level { get; set; }
     public int TasksCompleted { get; set; }
+    public string? BonusCategoryName { get; set; }
 }

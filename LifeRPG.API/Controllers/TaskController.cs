@@ -42,6 +42,7 @@ namespace LifeRPG.API.Controllers
                     DueDate = t.DueDate,
                     Username = t.User != null ? t.User.Username : null,
                     CategoryName = t.Category != null ? t.Category.Name : null,
+                    CategoryIcon = t.Category != null ? t.Category.Icon : null,
                     AwardedCharacterId = t.AwardedCharacterId
                 })
                 .ToListAsync();
@@ -305,8 +306,8 @@ public async Task<IActionResult> CompleteTask(Guid id)
     if (task.User == null)
         return BadRequest("Task user not found.");
 
-            // If this task was already completed on a previous day and is recurring,
-            // treat it as incomplete today so it can be completed again.
+    // If this task was already completed on a previous day and is recurring,
+    // treat it as incomplete today so it can be completed again.
     if (task.IsRecurring &&
         task.IsCompleted &&
         task.CompletedAt.HasValue &&
@@ -330,25 +331,43 @@ public async Task<IActionResult> CompleteTask(Guid id)
         task.CompletedAt = DateTime.UtcNow;
         task.AwardedCharacterId = characterId;
 
+        // ===== BONUS CALCULATION =====
+        var activeCharacterEntity = await _context.Characters
+            .FirstOrDefaultAsync(c => c.Id == characterId);
+
+        var taskCategory = await _context.Categories
+            .FirstOrDefaultAsync(c => c.Id == task.CategoryId);
+
+        var bonusMultiplier = 1.0;
+        if (activeCharacterEntity?.BonusCategoryName != null &&
+            taskCategory?.Name == activeCharacterEntity.BonusCategoryName)
+        {
+            bonusMultiplier = 1.2; // +20%
+        }
+
+        var actualXp = (int)Math.Round(task.XPValue * bonusMultiplier);
+        var actualLp = (int)Math.Round(task.XPValue * bonusMultiplier / 2.0);
+        // ===== BONUS CALCULATION END =====
+
         // ===== USER LP =====
-        task.User.TotalLifePoints += task.XPValue;
+        task.User.TotalLifePoints += actualLp;
 
         var lpResult = ProgressionHelper.AddPoints(
             task.User.LifeLevel,
             task.User.CurrentLifePoints,
-            task.XPValue
+            actualLp
         );
 
         task.User.LifeLevel = lpResult.newLevel;
         task.User.CurrentLifePoints = lpResult.newCurrentPoints;
 
         // ===== CHARACTER XP =====
-        userChar.TotalXP += task.XPValue;
+        userChar.TotalXP += actualXp;
 
         var xpResult = ProgressionHelper.AddPoints(
             userChar.Level,
             userChar.CurrentXP,
-            task.XPValue
+            actualXp
         );
 
         userChar.Level = xpResult.newLevel;
@@ -421,6 +440,8 @@ public async Task<IActionResult> CompleteTask(Guid id)
         return Ok(new CompleteTaskResultDto
         {
             ForcedCharacterSwitch = false,
+            ActualXpAwarded = actualXp,
+            ActualLpAwarded = actualLp,
             NewlyEarned = newlyEarned.Select(a => new AchievementDto
             {
                 Name = a.Name, Emoji = a.Emoji, Description = a.Description
@@ -558,6 +579,8 @@ public async Task<IActionResult> CompleteTask(Guid id)
             ForcedCharacterSwitch = forcedSwitch,
             SwitchedToEmoji = switchedToEmoji,
             SwitchedToName = switchedToName,
+            ActualXpAwarded = -task.XPValue, 
+            ActualLpAwarded = -(int)Math.Round(task.XPValue / 2.0),   
             NewlyEarned = newlyEarned.Select(a => new AchievementDto
             {
                 Name = a.Name, Emoji = a.Emoji, Description = a.Description
