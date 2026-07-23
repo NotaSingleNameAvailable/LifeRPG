@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { NgIf } from '@angular/common';
 import { Router } from '@angular/router';
 import { UserService } from '../../core/services/user.service';  
@@ -8,7 +7,7 @@ import { UserService } from '../../core/services/user.service';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, HttpClientModule, NgIf],
+  imports: [FormsModule, NgIf],
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
@@ -30,8 +29,9 @@ export class Register {
       next: (response) => {
         console.log('User registered:', response);
         this.message = 'Registration successful!';
-        this.isError = false; // ✅ green for success
+        this.isError = false; //  green for success
         localStorage.setItem('userId', (response as any).id);
+        localStorage.setItem('token', (response as any).token);//  save token
         this.router.navigate(['/dashboard']);
       },
       error: (error) => {

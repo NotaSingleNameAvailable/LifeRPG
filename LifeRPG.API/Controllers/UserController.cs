@@ -4,6 +4,8 @@ using LifeRPG.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LifeRPG.Core.Helpers;
+using LifeRPG.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LifeRPG.API.Controllers;
 
@@ -12,10 +14,12 @@ namespace LifeRPG.API.Controllers;
 public class UserController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly JwtService _jwtService;
 
-    public UserController(AppDbContext context)
+    public UserController(AppDbContext context, JwtService  jwtService)
     {
         _context = context;
+        _jwtService = jwtService;
     }
 
     [HttpPost("register")]
@@ -34,7 +38,7 @@ public class UserController : ControllerBase
             Id = Guid.NewGuid(),
             Username = request.Username,
             Email = request.Email,
-            PasswordHash = request.Password, // ⚠️ In production, hash this! (if i dont keep it as a portfolio thing only)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             TotalLifePoints = 0,
             CurrentLifePoints = 0,
             LifeLevel = 1,
@@ -73,11 +77,15 @@ public class UserController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
+        // Generate token on register so user is immediately logged in
+        var token = _jwtService.GenerateToken(user.Id.ToString(), user.Username);
+
         return Ok(new UserResponseDto
         {
             Id = user.Id.ToString(),
             Username = user.Username,
             Email = user.Email,
+            Token = token,
             TotalLifePoints = user.TotalLifePoints,
             CurrentLifePoints = user.CurrentLifePoints,
             LifeLevel = user.LifeLevel,
@@ -97,17 +105,21 @@ public class UserController : ControllerBase
                 .ThenInclude(cp => cp.Character)
             .FirstOrDefaultAsync(u => u.Username == request.Username);
 
-        if (user == null || user.PasswordHash != request.Password)
-            return Unauthorized("Invalid credentials");
+         // BCrypt.Verify compares plain password against stored hash
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        return Unauthorized("Invalid credentials");
 
         var charProgress = user.CharacterProgress
             .FirstOrDefault(cp => cp.CharacterId == user.ActiveCharacterId);
+
+        var token = _jwtService.GenerateToken(user.Id.ToString(), user.Username);
 
         return Ok(new UserResponseDto
         {
             Id = user.Id.ToString(),
             Username = user.Username,
             Email = user.Email,
+            Token = token,
             TotalLifePoints = user.TotalLifePoints,
             CurrentLifePoints = user.CurrentLifePoints,
             LifeLevel = user.LifeLevel,
@@ -119,6 +131,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{userId}/stats")]
+    [Authorize] 
     public async Task<ActionResult<UserStatsDto>> GetUserStats(string userId)
     {
         var user = await _context.Users
@@ -142,6 +155,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("{userId}/stats")]
+    [Authorize] 
     public async Task<IActionResult> UpdateUserStats(string userId, [FromBody] UserStatsDto stats)
     {
         var user = await _context.Users.FindAsync(Guid.Parse(userId));
@@ -168,6 +182,7 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("{userId}/characters")]
+    [Authorize] 
     public async Task<ActionResult<IEnumerable<CharacterProgressDto>>> GetUserCharacters(string userId)
     {
         var user = await _context.Users
@@ -195,6 +210,7 @@ public class UserController : ControllerBase
     }
 
 [HttpGet("{userId}/me")]
+[Authorize] 
 public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
 {
     var user = await _context.Users
@@ -250,6 +266,7 @@ public async Task<ActionResult<UserMeDto>> GetUserState(string userId)
 }
 
 [HttpPost("{userId}/apply-task-delta")]
+[Authorize] 
 public async Task<IActionResult> ApplyTaskDelta(string userId, [FromBody] ApplyTaskDeltaDto dto)
 {
     if (dto.CharacterId == Guid.Empty)

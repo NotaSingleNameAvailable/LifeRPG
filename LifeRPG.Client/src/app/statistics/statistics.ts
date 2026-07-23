@@ -85,6 +85,7 @@ export class Statistics implements OnInit {
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
+    localStorage.removeItem('token');
     this.router.navigate(['/login']);
   }
 }

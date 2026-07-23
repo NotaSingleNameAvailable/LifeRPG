@@ -26,6 +26,7 @@ export class Login {
       next: (res: any) => {
         localStorage.setItem('userId', res.id);
         localStorage.setItem('username', res.username);
+        localStorage.setItem('token', (res as any).token); // save token
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

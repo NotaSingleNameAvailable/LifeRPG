@@ -5,6 +5,7 @@ public class UserResponseDto
     public required string Id { get; set; }
     public required string Username { get; set; }
     public required string Email { get; set; }
+     public string Token { get; set; } = string.Empty;
     public int TotalLifePoints { get; set; }
     public int CurrentLifePoints { get; set; }
     public int LifeLevel { get; set; }

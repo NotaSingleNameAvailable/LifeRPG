@@ -19,7 +19,9 @@
 
 <!-- Side drawer -->
 <div
-  class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform transition-transform duration-300"
+  class="fixed top-0 left-0 h-full w-72 bg-gray-900 text-white z-50 shadow-2xl transform"
+  [class.transition-transform]="isDrawerOpen"
+  [class.duration-300]="isDrawerOpen"
   [class.translate-x-0]="isDrawerOpen"
   [class.-translate-x-full]="!isDrawerOpen"
 >
