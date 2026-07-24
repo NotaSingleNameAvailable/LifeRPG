@@ -1,10 +1,7 @@
 using LifeRPG.API.DTOs;
-using LifeRPG.Core.Helpers;
-using LifeRPG.Core.Models;
-using LifeRPG.Infrastructure.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using LifeRPG.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LifeRPG.API.Controllers
 {
@@ -13,628 +10,71 @@ namespace LifeRPG.API.Controllers
     [Authorize]
     public class TaskController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ITaskService _taskService;
 
-        public TaskController(AppDbContext context)
+        public TaskController(ITaskService taskService)
         {
-            _context = context;
+            _taskService = taskService;
         }
 
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetTasks(Guid userId)
         {
-            var tasks = await _context.Tasks
-                .AsNoTracking()
-                .Include(t => t.User)
-                .Include(t => t.Category)
-                .Where(t => t.UserId == userId) 
-                .Select(t => new TaskResponseDto
-                {
-                    Id = t.Id,
-                    UserId = t.UserId,
-                    CategoryId = t.CategoryId,
-                    Title = t.Title,
-                    Description = t.Description,
-                    XPValue = t.XPValue,
-                    IsCompleted = t.IsCompleted,
-                    IsRecurring = t.IsRecurring,
-                    RecurrencePattern = t.RecurrencePattern,
-                    CreatedAt = t.CreatedAt,
-                    CompletedAt = t.CompletedAt,
-                    DueDate = t.DueDate,
-                    Username = t.User != null ? t.User.Username : null,
-                    CategoryName = t.Category != null ? t.Category.Name : null,
-                    CategoryIcon = t.Category != null ? t.Category.Icon : null,
-                    AwardedCharacterId = t.AwardedCharacterId
-                })
-                .ToListAsync();
-
+            var tasks = await _taskService.GetTasksAsync(userId);
             return Ok(tasks);
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto)
         {
-            if (dto.UserId == Guid.Empty)
-                return BadRequest("UserId is required.");
+            var (result, error) = await _taskService.CreateTaskAsync(dto);
 
-            if (dto.CategoryId == Guid.Empty)
-                return BadRequest("CategoryId is required.");
+            if (result == null)
+                return BadRequest(error);
 
-            if (string.IsNullOrWhiteSpace(dto.Title))
-                return BadRequest("Title is required.");
-
-            var userExists = await _context.Users.AnyAsync(u => u.Id == dto.UserId);
-            if (!userExists)
-                return BadRequest("Invalid UserId.");
-
-            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId);
-            if (!categoryExists)
-                return BadRequest("Invalid CategoryId.");
-
-            var task = new RpgTask
-            {
-                UserId = dto.UserId,
-                CategoryId = dto.CategoryId,
-                Title = dto.Title,
-                Description = dto.Description,
-                XPValue = dto.XPValue,
-                RecurrencePattern = dto.RecurrencePattern,
-                IsRecurring = !string.IsNullOrWhiteSpace(dto.RecurrencePattern),
-                DueDate = dto.DueDate,
-                CreatedAt = DateTime.UtcNow,
-                IsCompleted = false,
-                AwardedCharacterId = null
-            };
-
-            _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
-
-            var createdTask = await _context.Tasks
-                .AsNoTracking()
-                .Include(t => t.User)
-                .Include(t => t.Category)
-                .Where(t => t.Id == task.Id)
-                .Select(t => new TaskResponseDto
-                {
-                    Id = t.Id,
-                    UserId = t.UserId,
-                    CategoryId = t.CategoryId,
-                    Title = t.Title,
-                    Description = t.Description,
-                    XPValue = t.XPValue,
-                    IsCompleted = t.IsCompleted,
-                    IsRecurring = t.IsRecurring,
-                    RecurrencePattern = t.RecurrencePattern,
-                    CreatedAt = t.CreatedAt,
-                    CompletedAt = t.CompletedAt,
-                    DueDate = t.DueDate,
-                    Username = t.User != null ? t.User.Username : null,
-                    CategoryName = t.Category != null ? t.Category.Name : null,
-                    AwardedCharacterId = t.AwardedCharacterId
-                })
-                .FirstOrDefaultAsync();
-
-            return Ok(createdTask);
+            return Ok(result);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTask(Guid id, [FromBody] CreateTaskDto dto)
         {
-            if (id == Guid.Empty)
-                return BadRequest("Task id is required.");
+            var (success, error) = await _taskService.UpdateTaskAsync(id, dto);
 
-            if (dto.UserId == Guid.Empty)
-                return BadRequest("UserId is required.");
-
-            if (dto.CategoryId == Guid.Empty)
-                return BadRequest("CategoryId is required.");
-
-            if (string.IsNullOrWhiteSpace(dto.Title))
-                return BadRequest("Title is required.");
-
-            var task = await _context.Tasks
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (task == null)
-                return NotFound();
-
-            if (task.User == null)
-                return BadRequest("Task user not found.");
-
-            if (task.UserId != dto.UserId)
-                return BadRequest("You cannot change the owner of this task.");
-
-            var categoryExists = await _context.Categories.AnyAsync(c => c.Id == dto.CategoryId);
-            if (!categoryExists)
-                return BadRequest("Invalid CategoryId.");
-
-            var oldXpValue = task.XPValue;
-            var newXpValue = dto.XPValue;
-            var xpDelta = newXpValue - oldXpValue;
-
-            task.CategoryId = dto.CategoryId;
-            task.Title = dto.Title;
-            task.Description = dto.Description;
-            task.XPValue = newXpValue;
-            task.RecurrencePattern = dto.RecurrencePattern;
-            task.IsRecurring = !string.IsNullOrWhiteSpace(dto.RecurrencePattern);
-            task.DueDate = dto.DueDate;
-
-            if (task.IsCompleted && xpDelta != 0)
+            if (!success)
             {
-                var characterId = task.AwardedCharacterId ?? task.User.ActiveCharacterId;
-
-                if (characterId == null)
-                    return BadRequest("No character assigned to this completed task.");
-
-                if (task.AwardedCharacterId == null)
-                    task.AwardedCharacterId = characterId.Value;
-
-                var userChar = await GetOrCreateCharacterProgressAsync(task.UserId, characterId.Value);
-
-                if (xpDelta > 0)
-                {
-                    task.User.TotalLifePoints += xpDelta;
-
-                    var lpResult = ProgressionHelper.AddPoints(
-                        task.User.LifeLevel,
-                        task.User.CurrentLifePoints,
-                        xpDelta
-                    );
-
-                    task.User.LifeLevel = lpResult.newLevel;
-                    task.User.CurrentLifePoints = lpResult.newCurrentPoints;
-
-                    userChar.TotalXP += xpDelta;
-
-                    var xpResult = ProgressionHelper.AddPoints(
-                        userChar.Level,
-                        userChar.CurrentXP,
-                        xpDelta
-                    );
-
-                    userChar.Level = xpResult.newLevel;
-                    userChar.CurrentXP = xpResult.newCurrentPoints;
-                }
-                else
-                {
-                    var reduction = Math.Abs(xpDelta);
-
-                    task.User.TotalLifePoints -= reduction;
-                    if (task.User.TotalLifePoints < 0)
-                        task.User.TotalLifePoints = 0;
-
-                    var lpResult = ProgressionHelper.RemovePoints(
-                        task.User.LifeLevel,
-                        task.User.CurrentLifePoints,
-                        reduction
-                    );
-
-                    task.User.LifeLevel = lpResult.newLevel;
-                    task.User.CurrentLifePoints = lpResult.newCurrentPoints;
-
-                    userChar.TotalXP -= reduction;
-                    if (userChar.TotalXP < 0)
-                        userChar.TotalXP = 0;
-
-                    var xpResult = ProgressionHelper.RemovePoints(
-                        userChar.Level,
-                        userChar.CurrentXP,
-                        reduction
-                    );
-
-                    userChar.Level = xpResult.newLevel;
-                    userChar.CurrentXP = xpResult.newCurrentPoints;
-                }
-
-                userChar.LastUpdatedAt = DateTime.UtcNow;
+                if (error == "NotFound") return NotFound();
+                return BadRequest(error);
             }
 
-            await _context.SaveChangesAsync();
             return Ok();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(Guid id)
         {
-            if (id == Guid.Empty)
-                return BadRequest("Task id is required.");
+            var (success, error) = await _taskService.DeleteTaskAsync(id);
 
-            var task = await _context.Tasks
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (task == null)
-                return NotFound();
-
-            if (task.User == null)
-                return BadRequest("Task user not found.");
-
-            if (task.IsCompleted)
+            if (!success)
             {
-                var characterId = task.AwardedCharacterId ?? task.User.ActiveCharacterId;
-
-                if (characterId == null)
-                    return BadRequest("No character assigned to this completed task.");
-
-                var userChar = await GetOrCreateCharacterProgressAsync(task.UserId, characterId.Value);
-
-                task.User.TotalLifePoints -= task.XPValue;
-                if (task.User.TotalLifePoints < 0)
-                    task.User.TotalLifePoints = 0;
-
-                var lpResult = ProgressionHelper.RemovePoints(
-                    task.User.LifeLevel,
-                    task.User.CurrentLifePoints,
-                    task.XPValue
-                );
-
-                task.User.LifeLevel = lpResult.newLevel;
-                task.User.CurrentLifePoints = lpResult.newCurrentPoints;
-
-                userChar.TotalXP -= task.XPValue;
-                if (userChar.TotalXP < 0)
-                    userChar.TotalXP = 0;
-
-                var xpResult = ProgressionHelper.RemovePoints(
-                    userChar.Level,
-                    userChar.CurrentXP,
-                    task.XPValue
-                );
-
-                userChar.Level = xpResult.newLevel;
-                userChar.CurrentXP = xpResult.newCurrentPoints;
-                userChar.LastUpdatedAt = DateTime.UtcNow;
+                if (error == "NotFound") return NotFound();
+                return BadRequest(error);
             }
-
-            _context.Tasks.Remove(task);
-            await _context.SaveChangesAsync();
 
             return Ok();
         }
 
         [HttpPut("{id}/complete")]
-public async Task<IActionResult> CompleteTask(Guid id)
-{
-    var task = await _context.Tasks
-        .Include(t => t.User)
-        .FirstOrDefaultAsync(t => t.Id == id);
-
-    if (task == null)
-        return NotFound();
-
-    if (task.User == null)
-        return BadRequest("Task user not found.");
-
-    // If this task was already completed on a previous day and is recurring,
-    // treat it as incomplete today so it can be completed again.
-    if (task.IsRecurring &&
-        task.IsCompleted &&
-        task.CompletedAt.HasValue &&
-        task.CompletedAt.Value.Date != DateTime.UtcNow.Date)
-    {
-        task.IsCompleted = false;
-        task.CompletedAt = null;
-        task.AwardedCharacterId = null;
-    }
-
-    if (!task.IsCompleted)
-    {
-        // Completing now: bind XP to the active character at the moment of completion.
-        if (task.User.ActiveCharacterId == null)
-            return BadRequest("No active character selected.");
-
-        var characterId = task.User.ActiveCharacterId.Value;
-        var userChar = await GetOrCreateCharacterProgressAsync(task.UserId, characterId);
-
-        task.IsCompleted = true;
-        task.CompletedAt = DateTime.UtcNow;
-        task.AwardedCharacterId = characterId;
-
-        // ===== BONUS CALCULATION =====
-        var activeCharacterEntity = await _context.Characters
-            .FirstOrDefaultAsync(c => c.Id == characterId);
-
-        var taskCategory = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == task.CategoryId);
-
-        var bonusMultiplier = 1.0;
-        if (activeCharacterEntity?.BonusCategoryName != null &&
-            taskCategory?.Name == activeCharacterEntity.BonusCategoryName)
+        public async Task<IActionResult> CompleteTask(Guid id)
         {
-            bonusMultiplier = 1.2; // +20%
-        }
+            var (result, error) = await _taskService.CompleteTaskAsync(id);
 
-        var actualXp = (int)Math.Round(task.XPValue * bonusMultiplier);
-        var actualLp = (int)Math.Round(task.XPValue * bonusMultiplier / 2.0);
-        // ===== BONUS CALCULATION END =====
-
-        // ===== USER LP =====
-        task.User.TotalLifePoints += actualLp;
-
-        var lpResult = ProgressionHelper.AddPoints(
-            task.User.LifeLevel,
-            task.User.CurrentLifePoints,
-            actualLp
-        );
-
-        task.User.LifeLevel = lpResult.newLevel;
-        task.User.CurrentLifePoints = lpResult.newCurrentPoints;
-
-        // ===== CHARACTER XP =====
-        userChar.TotalXP += actualXp;
-
-        var xpResult = ProgressionHelper.AddPoints(
-            userChar.Level,
-            userChar.CurrentXP,
-            actualXp
-        );
-
-        userChar.Level = xpResult.newLevel;
-        userChar.CurrentXP = xpResult.newCurrentPoints;
-        userChar.LastUpdatedAt = DateTime.UtcNow;
-
-        var today = DateTime.UtcNow.Date;
-        var lastDate = task.User.LastTaskDate?.Date;
-
-        if (lastDate == null || lastDate < today.AddDays(-1))
-            task.User.StreakCount = 1;
-        else if (lastDate == today.AddDays(-1))
-            task.User.StreakCount += 1;
-
-        task.User.LastTaskDate = DateTime.UtcNow;
-
-        //  ACHIEVEMENT CHECK (completing branch)
-        var allAchievements = await _context.Achievements.ToListAsync();
-
-        var totalTasksCompleted = await _context.Tasks
-            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted) + 1;
-
-        var earned = AchievementHelper.GetEarned(
-            allAchievements,
-            totalTasksCompleted,
-            task.User.StreakCount,
-            task.User.LifeLevel
-        );
-
-        var currentAchievementIds = await _context.UserAchievements
-            .Where(ua => ua.UserId == task.UserId)
-            .Select(ua => ua.AchievementId)
-            .ToHashSetAsync();
-
-        var earnedIds = earned.Select(a => a.Id).ToHashSet();
-
-        var newlyEarned = earned
-            .Where(a => !currentAchievementIds.Contains(a.Id))
-            .ToList();
-
-        var newlyLost = allAchievements
-            .Where(a => currentAchievementIds.Contains(a.Id) && !earnedIds.Contains(a.Id))
-            .ToList();
-
-        if (newlyEarned.Count > 0)
-        {
-            var newRecords = newlyEarned.Select(a => new UserAchievement
+            if (result == null)
             {
-                UserId = task.UserId,
-                AchievementId = a.Id,
-                EarnedAt = DateTime.UtcNow
-            }).ToList();
-
-            await _context.UserAchievements.AddRangeAsync(newRecords);
-        }
-
-        if (newlyLost.Count > 0)
-        {
-            var lostIds = newlyLost.Select(a => a.Id).ToList();
-            var toRemove = await _context.UserAchievements
-                .Where(ua => ua.UserId == task.UserId && lostIds.Contains(ua.AchievementId))
-                .ToListAsync();
-
-            _context.UserAchievements.RemoveRange(toRemove);
-        }
-        //  ACHIEVEMENT CHECK END
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new CompleteTaskResultDto
-        {
-            ForcedCharacterSwitch = false,
-            ActualXpAwarded = actualXp,
-            ActualLpAwarded = actualLp,
-            NewlyEarned = newlyEarned.Select(a => new AchievementDto
-            {
-                Name = a.Name, Emoji = a.Emoji, Description = a.Description
-            }).ToList(),
-            NewlyLost = newlyLost.Select(a => new AchievementDto
-            {
-                Name = a.Name, Emoji = a.Emoji, Description = a.Description
-            }).ToList()
-        });
-    }
-    else
-    {
-        if (task.AwardedCharacterId == null)
-            return BadRequest("Task has no awarded character. Data inconsistency.");
-
-        var userChar = await GetOrCreateCharacterProgressAsync(
-            task.UserId,
-            task.AwardedCharacterId.Value
-        );
-        // ===== BONUS RECALCULATION ON UNCOMPLETE =====
-        var awardedCharacter = await _context.Characters
-            .FirstOrDefaultAsync(c => c.Id == task.AwardedCharacterId.Value);
-
-        var taskCategoryForUndo = await _context.Categories
-            .FirstOrDefaultAsync(c => c.Id == task.CategoryId);
-
-        var undoMultiplier = 1.0;
-        if (awardedCharacter?.BonusCategoryName != null &&
-            taskCategoryForUndo?.Name == awardedCharacter.BonusCategoryName)
-        {
-            undoMultiplier = 1.2;
-        }
-
-        var xpToRemove = (int)Math.Round(task.XPValue * undoMultiplier);
-        var lpToRemove = (int)Math.Round(task.XPValue * undoMultiplier / 2.0);
-        // ===== BONUS RECALCULATION END =====
-
-        
-        task.IsCompleted = false;
-        task.CompletedAt = null;
-
-        // ===== USER LP =====
-        task.User.TotalLifePoints -= task.XPValue;
-        if (task.User.TotalLifePoints < 0)
-            task.User.TotalLifePoints = 0;
-
-        var lpResult = ProgressionHelper.RemovePoints(
-            task.User.LifeLevel,
-            task.User.CurrentLifePoints,
-            lpToRemove
-        );
-
-        task.User.LifeLevel = lpResult.newLevel;
-        task.User.CurrentLifePoints = lpResult.newCurrentPoints;
-
-        // ===== CHARACTER XP =====
-        userChar.TotalXP -= task.XPValue;
-        if (userChar.TotalXP < 0)
-            userChar.TotalXP = 0;
-
-        var xpResult = ProgressionHelper.RemovePoints(
-            userChar.Level,
-            userChar.CurrentXP,
-            xpToRemove
-        );
-
-        userChar.Level = xpResult.newLevel;
-        userChar.CurrentXP = xpResult.newCurrentPoints;
-        userChar.LastUpdatedAt = DateTime.UtcNow;
-
-        // Forced character switch check
-        var forcedSwitch = false;
-        string? switchedToEmoji = null;
-        string? switchedToName = null;
-
-        if (task.User.ActiveCharacterId.HasValue)
-        {
-            var activeChar = await _context.Characters
-                .FirstOrDefaultAsync(c => c.Id == task.User.ActiveCharacterId.Value);
-
-            if (activeChar != null && activeChar.UnlockLevel > task.User.LifeLevel)
-            {
-                var defaultChar = await _context.Characters
-                    .Where(c => c.UnlockLevel == 0)
-                    .OrderBy(c => c.Cid)
-                    .FirstOrDefaultAsync();
-
-                if (defaultChar != null)
-                {
-                    task.User.ActiveCharacterId = defaultChar.Id;
-                    forcedSwitch = true;
-                    switchedToEmoji = defaultChar.Emoji;
-                    switchedToName = defaultChar.Name;
-                }
-            }
-        }
-
-        //  ACHIEVEMENT CHECK (uncompleting branch)
-        var allAchievements = await _context.Achievements.ToListAsync();
-
-        var totalTasksCompleted = await _context.Tasks
-            .CountAsync(t => t.UserId == task.UserId && t.IsCompleted) - 1;
-            if (totalTasksCompleted < 0) totalTasksCompleted = 0;
-
-        var earned = AchievementHelper.GetEarned(
-            allAchievements,
-            totalTasksCompleted,
-            task.User.StreakCount,
-            task.User.LifeLevel
-        );
-
-        var currentAchievementIds = await _context.UserAchievements
-            .Where(ua => ua.UserId == task.UserId)
-            .Select(ua => ua.AchievementId)
-            .ToHashSetAsync();
-
-        var earnedIds = earned.Select(a => a.Id).ToHashSet();
-
-        var newlyEarned = earned
-            .Where(a => !currentAchievementIds.Contains(a.Id))
-            .ToList();
-
-        var newlyLost = allAchievements
-            .Where(a => currentAchievementIds.Contains(a.Id) && !earnedIds.Contains(a.Id))
-            .ToList();
-
-        if (newlyEarned.Count > 0)
-        {
-            var newRecords = newlyEarned.Select(a => new UserAchievement
-            {
-                UserId = task.UserId,
-                AchievementId = a.Id,
-                EarnedAt = DateTime.UtcNow
-            }).ToList();
-
-            await _context.UserAchievements.AddRangeAsync(newRecords);
-        }
-
-        if (newlyLost.Count > 0)
-        {
-            var lostIds = newlyLost.Select(a => a.Id).ToList();
-            var toRemove = await _context.UserAchievements
-                .Where(ua => ua.UserId == task.UserId && lostIds.Contains(ua.AchievementId))
-                .ToListAsync();
-
-            _context.UserAchievements.RemoveRange(toRemove);
-        }
-        //  ACHIEVEMENT CHECK END
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new CompleteTaskResultDto
-        {
-            ForcedCharacterSwitch = forcedSwitch,
-            SwitchedToEmoji = switchedToEmoji,
-            SwitchedToName = switchedToName,
-            ActualXpAwarded = -xpToRemove,
-            ActualLpAwarded = -lpToRemove,   
-            NewlyEarned = newlyEarned.Select(a => new AchievementDto
-            {
-                Name = a.Name, Emoji = a.Emoji, Description = a.Description
-            }).ToList(),
-            NewlyLost = newlyLost.Select(a => new AchievementDto
-            {
-                Name = a.Name, Emoji = a.Emoji, Description = a.Description
-            }).ToList()
-        });
-    }
-}
-        private async Task<UserCharacterProgress> GetOrCreateCharacterProgressAsync(Guid userId, Guid characterId)
-        {
-            var progress = await _context.UserCharacterProgress
-                .FirstOrDefaultAsync(cp => cp.UserId == userId && cp.CharacterId == characterId);
-
-            if (progress == null)
-            {
-                progress = new UserCharacterProgress
-                {
-                    UserId = userId,
-                    CharacterId = characterId,
-                    TotalXP = 0,
-                    CurrentXP = 0,
-                    Level = 1,
-                    IsUnlocked = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.UserCharacterProgress.Add(progress);
+                if (error == "NotFound") return NotFound();
+                return BadRequest(error);
             }
 
-            return progress;
+            return Ok(result);
         }
     }
 }

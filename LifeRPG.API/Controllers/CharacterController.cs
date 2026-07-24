@@ -1,8 +1,6 @@
-using LifeRPG.API.DTOs;
-using LifeRPG.Infrastructure.Data;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using LifeRPG.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LifeRPG.API.Controllers
 {
@@ -11,81 +9,32 @@ namespace LifeRPG.API.Controllers
     [Authorize]
     public class CharacterController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICharacterService _characterService;
 
-        public CharacterController(AppDbContext context)
+        public CharacterController(ICharacterService characterService)
         {
-            _context = context;
+            _characterService = characterService;
         }
 
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetCharacters(Guid userId)
         {
-            var user = await _context.Users
-                .Include(u => u.CharacterProgress)
-                    .ThenInclude(cp => cp.Character)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            var characters = await _characterService.GetCharactersForUserAsync(userId);
 
-            if (user == null)
+            if (!characters.Any())
                 return NotFound("User not found");
 
-            var characters = await _context.Characters
-                .AsNoTracking()
-                .OrderBy(c => c.Cid)
-                .ToListAsync();
-
-             // Load completed task counts per character
-                var taskCounts = await _context.Tasks
-                     .Where(t => t.UserId == userId && t.IsCompleted && t.AwardedCharacterId != null)
-                      .GroupBy(t => t.AwardedCharacterId)
-                      .Select(g => new { CharacterId = g.Key, Count = g.Count() })
-                      .ToListAsync();
-
-            var result = characters.Select(c =>
-            {
-                var progress = user.CharacterProgress.FirstOrDefault(cp => cp.CharacterId == c.Id);
-                var taskCount = taskCounts.FirstOrDefault(t => t.CharacterId == c.Id);
-
-                return new CharacterProgressDto
-                {
-                    Id = c.Id.ToString(),
-
-                    CharacterId = c.Id.ToString(),
-
-                    Cid = c.Cid,
-                    CharacterName = c.Name,
-                    CharacterEmoji = c.Emoji,
-                    Description = c.Description,
-                    UnlockLevel = c.UnlockLevel,
-                    IsUnlocked = user.LifeLevel >= c.UnlockLevel,
-                    IsActive = user.ActiveCharacterId == c.Id,
-                    TotalXP = progress?.TotalXP ?? 0,
-                    CurrentXP = progress?.CurrentXP ?? 0,
-                    Level = progress?.Level ?? 1,
-                    TasksCompleted = taskCount?.Count ?? 0,
-                    BonusCategoryName = c.BonusCategoryName
-                };
-            }).ToList();
-
-            return Ok(result);
+            return Ok(characters);
         }
 
         [HttpPut("select/{userId}/{characterId}")]
         public async Task<IActionResult> SelectCharacter(Guid userId, Guid characterId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
-                return NotFound("User not found");
+            var (success, errorMessage) = await _characterService
+                .SelectCharacterAsync(userId, characterId);
 
-            var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == characterId);
-            if (character == null)
-                return NotFound("Character not found");
-
-            if (user.LifeLevel < character.UnlockLevel)
-                return BadRequest("Character is locked");
-
-            user.ActiveCharacterId = characterId;
-            await _context.SaveChangesAsync();
+            if (!success)
+                return BadRequest(errorMessage);
 
             return Ok();
         }
